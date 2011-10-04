@@ -1,6 +1,7 @@
 package org.dataone.portal;
 
 import java.io.IOException;
+import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
 
 import javax.servlet.ServletException;
@@ -62,6 +63,34 @@ public class PortalCertificateManager {
 	 * @throws IOException
 	 */
 	public X509Certificate getCertificate(HttpServletRequest request) throws IOException {
+        PortalCredentials credential = getCredentials(request);
+        if (credential == null) {
+        	return null;
+        }
+		return credential.getX509Certificate();  
+	}
+	
+	/**
+	 * Get the private key from the store, based on the cookie (if present)
+	 * @param request
+	 * @return 
+	 * @throws IOException
+	 */
+	public PrivateKey getPrivateKey(HttpServletRequest request) throws IOException {
+        PortalCredentials credential = getCredentials(request);
+        if (credential == null) {
+        	return null;
+        }
+		return credential.getPrivateKey();  
+	}
+	
+	/**
+	 * Get the credentials from the store, based on the cookie (if present)
+	 * @param request
+	 * @return 
+	 * @throws IOException
+	 */
+	public PortalCredentials getCredentials(HttpServletRequest request) throws IOException {
 		Cookie[] cookies = request.getCookies();
         String identifier = null;
         if (cookies != null) {
@@ -82,7 +111,7 @@ public class PortalCertificateManager {
 				
             	CILogonService cis = new CILogonService(portalEnvironment);
                 PortalCredentials credential = cis.getCredential(identifier);
-                return credential.getX509Certificate();
+                return credential;
             }
             
         }
