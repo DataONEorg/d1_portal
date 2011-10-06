@@ -56,6 +56,14 @@ public class PortalCertificateManager {
     	httpServletResponse.addCookie(cookie);
 	}
 	
+	public void removeCookie(HttpServletResponse httpServletResponse) {
+		// put our d1 cookie back but expires immediately to remove it
+        Cookie cookie = new Cookie(D1_CERTIFICATE_COOKIE_ID, "removeMe");
+    	cookie.setMaxAge(0); // clear now
+    	cookie.setPath("/"); // need to cross contexts
+    	httpServletResponse.addCookie(cookie);
+	}
+	
 	/**
 	 * Get the certificate from the store, based on the cookie (if present)
 	 * @param request
