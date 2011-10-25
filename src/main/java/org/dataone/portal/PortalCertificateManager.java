@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
 
-import javax.servlet.ServletException;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -48,6 +47,13 @@ public class PortalCertificateManager {
 		return instance;
 	}
 	
+	/**
+	 * Sets the certificate Cookie on the response.
+	 * Future interactions with this service will be tied to the certificate
+	 * by this cookie
+	 * @param identifier
+	 * @param httpServletResponse
+	 */
 	public void setCookie(String identifier, HttpServletResponse httpServletResponse) {
 		// put our d1 cookie back so we can look up the credential as needed.
         Cookie cookie = new Cookie(D1_CERTIFICATE_COOKIE_ID, identifier);
@@ -56,6 +62,26 @@ public class PortalCertificateManager {
     	httpServletResponse.addCookie(cookie);
 	}
 	
+	/**
+	 * Retrieves the certificate Cookie from the request
+	 * @param httpServletRequest
+	 * @return
+	 */
+	public Cookie getCookie(HttpServletRequest httpServletRequest) {
+    	if (httpServletRequest.getCookies() != null) {
+    		for (Cookie cookie: httpServletRequest.getCookies()) {
+    			if (cookie.getName().equals(D1_CERTIFICATE_COOKIE_ID)) {
+    				return cookie;
+    			}
+    		}
+    	}
+    	return null;
+	}
+	
+	/**
+	 * Removes the certificate cookie, essentially logging out the user
+	 * @param httpServletResponse
+	 */
 	public void removeCookie(HttpServletResponse httpServletResponse) {
 		// put our d1 cookie back but expires immediately to remove it
         Cookie cookie = new Cookie(D1_CERTIFICATE_COOKIE_ID, "removeMe");
@@ -93,6 +119,29 @@ public class PortalCertificateManager {
 	}
 	
 	/**
+	 * Get the credentials from the store, based on the token/identifier
+	 * @param identifier for the certificate/credential
+	 * @return 
+	 * @throws IOException
+	 */
+	public PortalCredentials getCredentials(String identifier) throws IOException {
+        if (identifier != null) {
+			PortalConfigurationDepot configurationDepot = new PortalConfigurationDepot(configFile);
+        	CILogonConfiguration ciLogonConfiguration = configurationDepot.getCurrentConfiguration();
+        	
+        	//PortalEnvironment portalEnvironment = PortalAbstractServlet.getPortalEnvironment();
+        	PortalEnvironment portalEnvironment = new PortalEnvironment();
+			portalEnvironment.setConfiguration(ciLogonConfiguration);
+			
+        	CILogonService cis = new CILogonService(portalEnvironment);
+            PortalCredentials credential = cis.getCredential(identifier);
+            return credential;
+        }
+        // if there was no cookie or certificate
+        return null;
+	}
+	
+	/**
 	 * Get the credentials from the store, based on the cookie (if present)
 	 * @param request
 	 * @return 
@@ -105,25 +154,10 @@ public class PortalCertificateManager {
             for (Cookie cookie : cookies) {
                 if (cookie.getName().equals(PortalCertificateManager.D1_CERTIFICATE_COOKIE_ID)) {
                     identifier = cookie.getValue();
-                    break;
+                    return getCredentials(identifier);
                 }
             }
-            if (identifier != null) {
-            	
-				PortalConfigurationDepot configurationDepot = new PortalConfigurationDepot(configFile);
-            	CILogonConfiguration ciLogonConfiguration = configurationDepot.getCurrentConfiguration();
-            	
-            	//PortalEnvironment portalEnvironment = PortalAbstractServlet.getPortalEnvironment();
-            	PortalEnvironment portalEnvironment = new PortalEnvironment();
-				portalEnvironment.setConfiguration(ciLogonConfiguration);
-				
-            	CILogonService cis = new CILogonService(portalEnvironment);
-                PortalCredentials credential = cis.getCredential(identifier);
-                return credential;
-            }
-            
         }
-        // if there was no cookie or certificate
         return null;
 	}
 }
