@@ -8,11 +8,14 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.cilogon.portal.CILogonService;
 import org.cilogon.portal.PortalEnvironment;
 import org.cilogon.portal.config.cli.PortalConfigurationDepot;
 import org.cilogon.portal.util.PortalCredentials;
 import org.cilogon.rdf.CILogonConfiguration;
+import org.cilogon.util.exceptions.CILogonException;
 
 public class PortalCertificateManager {
 
@@ -38,7 +41,11 @@ public class PortalCertificateManager {
 	
 	private static String configFile = "/var/lib/tomcat6/webapps/portal/WEB-INF/cfg.rdf";
 	
+	private static int maxAttempts = 10;
+	
 	private static PortalCertificateManager instance;
+	
+	public static Log log = LogFactory.getLog(PortalCertificateManager.class);
 	
 	public static PortalCertificateManager getInstance() {
 		if (instance == null) {
@@ -134,7 +141,28 @@ public class PortalCertificateManager {
 			portalEnvironment.setConfiguration(ciLogonConfiguration);
 			
         	CILogonService cis = new CILogonService(portalEnvironment);
-            PortalCredentials credential = cis.getCredential(identifier);
+            PortalCredentials credential = null;
+            int attempts = 0;
+        	while (credential == null) {
+    	        try {
+    	        	credential = cis.getCredential(identifier);
+    	        } catch (CILogonException e) {
+    				// sleep and try again, for a while until failing
+    	        	log.warn(attempts + " - Error getting transaction, trying again. " + e.getMessage());
+    	        	try {
+						Thread.sleep(500);
+					} catch (InterruptedException ie) {
+	    	        	log.error("Could not wait for credentials: " + ie.getMessage());
+						// just throw the original error
+						throw e;
+					}
+    	        	attempts++;
+    	        	if (attempts > maxAttempts) {
+    	        		throw e;
+    	        	}
+    			}
+        	}
+            
             return credential;
         }
         // if there was no cookie or certificate
