@@ -68,6 +68,14 @@
             <url>http://cilogon.svn.sourceforge.net/svnroot/cilogon/m2-repo</url>
         </repository>
         <repository>
+            <id>CILogon-SNAPSHOT</id>
+            <name>CILogon Snapshot Repository</name>
+            <url>http://cilogon.svn.sourceforge.net/svnroot/cilogon/m2-repo/snapshots</url>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+        </repository>
+        <repository>
 			<id>dataone.org</id>
 			<url>http://dev-testing.dataone.org/maven</url>
 			<releases>
@@ -79,11 +87,10 @@
 		</repository>
     </repositories>
     <dependencies>
-        <dependency>
+    	<dependency>
             <artifactId>cilogon-portal</artifactId>
             <groupId>org.cilogon</groupId>
-            <version>1.2</version>
-            <type>jar</type>
+            <version>1.3.2-SNAPSHOT</version>
         </dependency>
         <dependency>
 			<groupId>org.dataone</groupId>
