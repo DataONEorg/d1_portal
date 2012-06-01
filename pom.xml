@@ -4,14 +4,14 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.dataone</groupId>
     <artifactId>d1_portal</artifactId>
-    <version>1.0.0-RC7-SNAPSHOT</version>
+    <version>1.0.0-RC7</version>
     <name>d1_portal</name>
     <packaging>jar</packaging>
     <url>http://maven.apache.org</url>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <d1_libclient_version>1.0.1-RC9-SNAPSHOT</d1_libclient_version>
-        <d1_common_java_version>1.0.1-RC8-SNAPSHOT</d1_common_java_version>
+        <d1_libclient_version>1.0.1-RC9</d1_libclient_version>
+        <d1_common_java_version>1.0.1-RC8</d1_common_java_version>
     </properties>
     <build>
         <plugins>
