@@ -4,7 +4,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.dataone</groupId>
     <artifactId>d1_portal</artifactId>
-    <version>1.0.1</version>
+    <version>1.0.2</version>
     <name>d1_portal</name>
     <packaging>jar</packaging>
     <url>http://maven.apache.org</url>
