@@ -138,7 +138,7 @@ public class PortalCertificateManager {
      */
     public X509Certificate getCertificate(HttpServletRequest request) throws Exception {
        Asset credential = getCredentials(request);
-        if (credential == null) {
+        if (credential == null || credential.getCertificates() == null || credential.getCertificates().length < 1) {
             return null;
         }
         return credential.getCertificates()[0];
