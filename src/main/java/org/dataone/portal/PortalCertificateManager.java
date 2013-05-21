@@ -44,9 +44,9 @@ import edu.uiuc.ncsa.myproxy.oa4mp.client.servlet.ClientServlet;
 
 public class PortalCertificateManager {
 
-    private static String configFile = "/var/lib/tomcat6/webapps/portal/WEB-INF/client.xml";
+    private String configFile = "/var/lib/tomcat6/webapps/portal/WEB-INF/client.xml";
 
-    private static String configName = null;
+    private String configName = null;
 
     private static int maxAttempts = 10;
 
@@ -60,8 +60,30 @@ public class PortalCertificateManager {
         }
         return instance;
     }
+    
+    public PortalCertificateManager() {}
+
+    public PortalCertificateManager(String configFile) {
+    	this.configFile = configFile;
+    }
 
     /**
+     * Gets the current configuration file path
+     * @return
+     */
+    public String getConfigFile() {
+		return configFile;
+	}
+
+    /**
+     * Sets the client configuration file path
+     * @param configFile
+     */
+	public void setConfigFile(String configFile) {
+		this.configFile = configFile;
+	}
+
+	/**
      * Sets the certificate Cookie on the response. Future interactions with
      * this service will be tied to the certificate by this cookie
      * 
