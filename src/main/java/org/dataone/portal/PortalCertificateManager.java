@@ -35,6 +35,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import org.dataone.client.auth.CertificateManager;
+import org.dataone.configuration.Settings;
 import org.dataone.service.types.v1.Session;
 
 import edu.uiuc.ncsa.myproxy.oa4mp.client.Asset;
@@ -44,7 +45,7 @@ import edu.uiuc.ncsa.myproxy.oa4mp.client.servlet.ClientServlet;
 
 public class PortalCertificateManager {
 
-    private String configFile = "/var/lib/tomcat6/webapps/portal/WEB-INF/client.xml";
+    private String configFile = Settings.getConfiguration().getString("oa4mp.client.config.file");
 
     private String configName = null;
 
