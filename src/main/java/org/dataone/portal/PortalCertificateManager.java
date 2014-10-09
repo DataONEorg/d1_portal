@@ -44,8 +44,10 @@ import edu.uiuc.ncsa.myproxy.oa4mp.client.loader.ClientEnvironmentUtil;
 import edu.uiuc.ncsa.myproxy.oa4mp.client.servlet.ClientServlet;
 
 public class PortalCertificateManager {
+    //this default value can be overwritten by a property named "oa4mp.client.config.file" in the portal.properties file.
+    private static final String DEFAULT_OA4MP_CONFIG_PATH = "/var/lib/tomcat7/webapps/portal/WEB-INF/client.xml";
 
-    private String configFile = Settings.getConfiguration().getString("oa4mp.client.config.file");
+    private String configFile = Settings.getConfiguration().getString("oa4mp.client.config.file", DEFAULT_OA4MP_CONFIG_PATH);
 
     private String configName = null;
 
