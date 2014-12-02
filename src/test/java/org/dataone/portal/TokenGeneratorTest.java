@@ -19,8 +19,10 @@ public class TokenGeneratorTest {
 	    	String sharedSecret = Settings.getConfiguration().getString("annotator.sharedSecret");
 	    	
 	    	String userId = "test";
+	    	
+	    	String fullName = "Jane Scientist";
 			
-			String token = TokenGenerator.getJWT(userId);
+			String token = TokenGenerator.getJWT(userId, fullName);
 			
 			// To parse the JWS and verify it, e.g. on client-side
 			SignedJWT signedJWT = SignedJWT.parse(token);
