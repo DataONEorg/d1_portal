@@ -23,7 +23,7 @@ import com.nimbusds.jwt.SignedJWT;
  */
 public class TokenGenerator {
 
-    public static String getJWT(String userId) throws JOSEException, ParseException {
+    public static String getJWT(String userId, String fullName) throws JOSEException, ParseException {
     	String sharedSecret = Settings.getConfiguration().getString("annotator.sharedSecret");
     	String consumerKey = Settings.getConfiguration().getString("annotator.consumerKey");
 
@@ -35,6 +35,7 @@ public class TokenGenerator {
 		JWTClaimsSet claimsSet = new JWTClaimsSet();
 		claimsSet.setClaim("consumerKey", consumerKey);
 		claimsSet.setClaim("userId", userId);
+		claimsSet.setClaim("fullName", fullName);
 		claimsSet.setClaim("issuedAt", DateTimeMarshaller.serializeDateToUTC(now.getTime()));
 		claimsSet.setClaim("ttl", 86400);
 		
