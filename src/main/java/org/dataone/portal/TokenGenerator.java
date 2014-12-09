@@ -1,16 +1,24 @@
 package org.dataone.portal;
 
+import static org.junit.Assert.assertTrue;
+
 import java.text.ParseException;
 import java.util.Calendar;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.dataone.configuration.Settings;
+import org.dataone.service.types.v1.Session;
+import org.dataone.service.types.v1.Subject;
 import org.dataone.service.util.DateTimeMarshaller;
 
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
 import com.nimbusds.jose.JWSSigner;
+import com.nimbusds.jose.JWSVerifier;
 import com.nimbusds.jose.crypto.MACSigner;
+import com.nimbusds.jose.crypto.MACVerifier;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 
@@ -22,6 +30,9 @@ import com.nimbusds.jwt.SignedJWT;
  *
  */
 public class TokenGenerator {
+	
+    public static Log log = LogFactory.getLog(TokenGenerator.class);
+
 
     public static String getJWT(String userId, String fullName) throws JOSEException, ParseException {
     	String sharedSecret = Settings.getConfiguration().getString("annotator.sharedSecret");
@@ -50,6 +61,32 @@ public class TokenGenerator {
 		
 		return token;
     	
+    }
+    
+    public static Session getSession(String token) {
+    	Session session = null;
+    	
+    	try {
+	    	// parse the JWS and verify it
+	    	String sharedSecret = Settings.getConfiguration().getString("annotator.sharedSecret");
+			SignedJWT signedJWT = SignedJWT.parse(token);
+			JWSVerifier verifier = new MACVerifier(sharedSecret);
+			assertTrue(signedJWT.verify(verifier));
+			
+			// extract user info
+			String userId = signedJWT.getJWTClaimsSet().getClaim("userId").toString();
+			Subject subject = new Subject();
+			subject.setValue(userId);
+			session = new Session();
+			session.setSubject(subject);
+			
+    	} catch (Exception e) {
+    		// if we got here, we don't have a good session
+    		log.warn("Could not get session from provided token: " + e.getMessage());
+    		return null;
+    	}
+    	
+    	return session;
     }
     
 }
