@@ -82,7 +82,7 @@ public class TokenGenerator {
 			
     	} catch (Exception e) {
     		// if we got here, we don't have a good session
-    		log.warn("Could not get session from provided token: " + e.getMessage());
+    		log.warn("Could not get session from provided token: " + token, e);
     		return null;
     	}
     	
