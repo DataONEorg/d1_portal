@@ -5,36 +5,61 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.interfaces.RSAPublicKey;
+
+import org.dataone.client.auth.CertificateManager;
 import org.dataone.configuration.Settings;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.nimbusds.jose.JWSVerifier;
-import com.nimbusds.jose.crypto.MACVerifier;
+import com.nimbusds.jose.crypto.RSASSAVerifier;
 import com.nimbusds.jwt.SignedJWT;
 
 public class TokenGeneratorTest {
 
+	@BeforeClass
+	public static void setUp() throws FileNotFoundException {
+		
+		File certificateFile = CertificateManager.getInstance().locateDefaultCertificate();
+		Settings.getConfiguration().setProperty("TODO.DEFINE.certificateFileName", certificateFile .getAbsolutePath());
+		Settings.getConfiguration().setProperty("TODO.DEFINE.privateKeyFileName", certificateFile.getAbsolutePath());
+		Settings.getConfiguration().setProperty("TODO.DEFINE.privateKeyFilePassword", null);
+
+	}
+	
+	
 	@Test
     public void testGetJWT() {
     	try {
-    	
-	    	String sharedSecret = Settings.getConfiguration().getString("annotator.sharedSecret");
-	    	
+    		    	
 	    	String userId = "test";
 	    	
 	    	String fullName = "Jane Scientist";
 			
-			String token = TokenGenerator.getJWT(userId, fullName);
+			String token = TokenGenerator.getInstance().getJWT(userId, fullName);
 			
 			// To parse the JWS and verify it, e.g. on client-side
 			SignedJWT signedJWT = SignedJWT.parse(token);
 	
 			// verify
-			JWSVerifier verifier = new MACVerifier(sharedSecret);
-			assertTrue(signedJWT.verify(verifier));
+	    	String certificateFileName = Settings.getConfiguration().getString("TODO.DEFINE.certificateFileName");
+			RSAPublicKey publicKey = (RSAPublicKey) CertificateManager.getInstance().loadCertificateFromFile(certificateFileName).getPublicKey();
 
+			JWSVerifier verifier = new RSASSAVerifier(publicKey);
+			assertTrue(signedJWT.verify(verifier));
+			
 			// make sure the secret is required for verification
-			JWSVerifier invalidVerifier = new MACVerifier(sharedSecret + "BAD");
+			KeyPairGenerator keyGenerator = KeyPairGenerator.getInstance("RSA");
+			keyGenerator.initialize(1024);
+			KeyPair kp = keyGenerator.genKeyPair();
+			RSAPublicKey otherKey = (RSAPublicKey)kp.getPublic();
+			
+			JWSVerifier invalidVerifier = new RSASSAVerifier(otherKey);
 			assertFalse(signedJWT.verify(invalidVerifier));
 			
 			// Retrieve the JWT claims
