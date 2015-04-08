@@ -31,9 +31,8 @@ public class TokenGeneratorTest {
 		String certificatePath = url.getPath();
 		String keyPath = url.getPath();
 
-		Settings.getConfiguration().setProperty("TODO.DEFINE.certificateFileName", certificatePath);
-		Settings.getConfiguration().setProperty("TODO.DEFINE.privateKeyFileName", keyPath);
-		Settings.getConfiguration().setProperty("TODO.DEFINE.privateKeyFilePassword", null);
+//		Settings.getConfiguration().setProperty("cn.server.publiccert.filename", certificatePath);
+//		Settings.getConfiguration().setProperty("cn.server.privatekey.filename", keyPath);
 
 	}
 	
@@ -52,7 +51,7 @@ public class TokenGeneratorTest {
 			SignedJWT signedJWT = SignedJWT.parse(token);
 	
 			// verify
-	    	String certificateFileName = Settings.getConfiguration().getString("TODO.DEFINE.certificateFileName");
+	    	String certificateFileName = Settings.getConfiguration().getString("cn.server.publiccert.filename");
 			RSAPublicKey publicKey = (RSAPublicKey) CertificateManager.getInstance().loadCertificateFromFile(certificateFileName).getPublicKey();
 
 			JWSVerifier verifier = new RSASSAVerifier(publicKey);
