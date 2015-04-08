@@ -7,6 +7,7 @@ import static org.junit.Assert.fail;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.net.URL;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.interfaces.RSAPublicKey;
@@ -25,9 +26,13 @@ public class TokenGeneratorTest {
 	@BeforeClass
 	public static void setUp() throws FileNotFoundException {
 		
-		File certificateFile = CertificateManager.getInstance().locateDefaultCertificate();
-		Settings.getConfiguration().setProperty("TODO.DEFINE.certificateFileName", certificateFile .getAbsolutePath());
-		Settings.getConfiguration().setProperty("TODO.DEFINE.privateKeyFileName", certificateFile.getAbsolutePath());
+		//File certificateFile = CertificateManager.getInstance().locateDefaultCertificate();
+		URL url = TokenGeneratorTest.class.getResource("unitTestSelfSignedCert.pem");
+		String certificatePath = url.getPath();
+		String keyPath = url.getPath();
+
+		Settings.getConfiguration().setProperty("TODO.DEFINE.certificateFileName", certificatePath);
+		Settings.getConfiguration().setProperty("TODO.DEFINE.privateKeyFileName", keyPath);
 		Settings.getConfiguration().setProperty("TODO.DEFINE.privateKeyFilePassword", null);
 
 	}
