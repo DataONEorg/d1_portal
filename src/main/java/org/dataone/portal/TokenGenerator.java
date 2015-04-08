@@ -52,9 +52,9 @@ public class TokenGenerator {
 	
     private TokenGenerator() throws IOException  {
      	
-    	String certificateFileName = Settings.getConfiguration().getString("TODO.DEFINE.certificateFileName");
-    	String privateKeyFileName = Settings.getConfiguration().getString("TODO.DEFINE.privateKeyFileName");
-    	String privateKeyPassword = Settings.getConfiguration().getString("TODO.DEFINE.privateKeyPassword");
+    	String certificateFileName = Settings.getConfiguration().getString("cn.server.publiccert.filename");
+    	String privateKeyFileName = Settings.getConfiguration().getString("cn.server.privatekey.filename");
+    	String privateKeyPassword = null;
 		publicKey = (RSAPublicKey) CertificateManager.getInstance().loadCertificateFromFile(certificateFileName).getPublicKey();
 		privateKey = (RSAPrivateKey) CertificateManager.getInstance().loadPrivateKeyFromFile(privateKeyFileName, privateKeyPassword);
 
