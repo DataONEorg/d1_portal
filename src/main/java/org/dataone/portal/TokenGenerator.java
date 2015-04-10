@@ -3,14 +3,19 @@ package org.dataone.portal;
 import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
+import java.net.URL;
+import java.security.cert.Certificate;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.text.ParseException;
 import java.util.Calendar;
 
+import javax.net.ssl.HttpsURLConnection;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.dataone.client.auth.CertificateManager;
+import org.dataone.client.v1.itk.D1Client;
 import org.dataone.configuration.Settings;
 import org.dataone.service.types.v1.Session;
 import org.dataone.service.types.v1.Subject;
@@ -52,17 +57,42 @@ public class TokenGenerator {
 	
     private TokenGenerator() throws IOException  {
      	
-    	String certificateFileName = Settings.getConfiguration().getString("cn.server.publiccert.filename");
     	String privateKeyFileName = Settings.getConfiguration().getString("cn.server.privatekey.filename");
     	String privateKeyPassword = null;
-		publicKey = (RSAPublicKey) CertificateManager.getInstance().loadCertificateFromFile(certificateFileName).getPublicKey();
+    	
 		privateKey = (RSAPrivateKey) CertificateManager.getInstance().loadPrivateKeyFromFile(privateKeyFileName, privateKeyPassword);
 
 		consumerKey = Settings.getConfiguration().getString("annotator.consumerKey");
-
+		
+		// use either the configured certificate, or fetch it from the CN
+		String certificateFileName = Settings.getConfiguration().getString("cn.server.publiccert.filename");
+		if (certificateFileName != null) {
+	    	publicKey = (RSAPublicKey) CertificateManager.getInstance().loadCertificateFromFile(certificateFileName).getPublicKey();
+		} else {
+			Certificate cert = fetchServerCertificate();
+			if (cert != null) {
+				publicKey = (RSAPublicKey) cert.getPublicKey();
+			}
+		}
+		
     }
 
-    public String getJWT(String userId, String fullName) throws JOSEException, ParseException, IOException {
+    public Certificate fetchServerCertificate() {
+		try {
+			String baseUrl = D1Client.getCN().getNodeBaseServiceUrl();
+			URL url = new URL(baseUrl);
+			HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
+			conn.connect();
+			Certificate serverCertificate = conn.getServerCertificates()[0];
+			return serverCertificate;
+		} catch (Exception e) {
+			log.error(e.getMessage(), e);
+		}
+		
+		return null;
+	}
+
+	public String getJWT(String userId, String fullName) throws JOSEException, ParseException, IOException {
     	
 		// Create RSA-signer with the private key
     	JWSSigner signer = new RSASSASigner(privateKey);
