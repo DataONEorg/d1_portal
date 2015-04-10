@@ -5,11 +5,11 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import java.io.File;
 import java.io.FileNotFoundException;
-import java.net.URL;
+import java.io.IOException;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
+import java.security.cert.X509Certificate;
 import java.security.interfaces.RSAPublicKey;
 
 import org.dataone.client.auth.CertificateManager;
@@ -26,14 +26,24 @@ public class TokenGeneratorTest {
 	@BeforeClass
 	public static void setUp() throws FileNotFoundException {
 		
-		//File certificateFile = CertificateManager.getInstance().locateDefaultCertificate();
-		URL url = TokenGeneratorTest.class.getResource("unitTestSelfSignedCert.pem");
-		String certificatePath = url.getPath();
-		String keyPath = url.getPath();
-
+//		File certificateFile = CertificateManager.getInstance().locateDefaultCertificate();
+//		URL url = TokenGeneratorTest.class.getResource("unitTestSelfSignedCert.pem");
+//		String certificatePath = url.getPath();
+//		String keyPath = url.getPath();
 //		Settings.getConfiguration().setProperty("cn.server.publiccert.filename", certificatePath);
 //		Settings.getConfiguration().setProperty("cn.server.privatekey.filename", keyPath);
 
+	}
+	
+	@Test
+	public void testFetchServerCertificate() {
+		X509Certificate certificate;
+		try {
+			certificate = (X509Certificate) TokenGenerator.getInstance().fetchServerCertificate();
+			assertTrue(CertificateManager.getInstance().getSubjectDN(certificate).contains("dataone.org"));
+		} catch (IOException e) {
+			fail(e.getMessage());
+		}
 	}
 	
 	
