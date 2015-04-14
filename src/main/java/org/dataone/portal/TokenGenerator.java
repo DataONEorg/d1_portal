@@ -60,7 +60,10 @@ public class TokenGenerator {
     	String privateKeyFileName = Settings.getConfiguration().getString("cn.server.privatekey.filename");
     	String privateKeyPassword = null;
     	
-		privateKey = (RSAPrivateKey) CertificateManager.getInstance().loadPrivateKeyFromFile(privateKeyFileName, privateKeyPassword);
+    	// consumers do not need the private key
+    	if (privateKeyFileName != null) {
+    		privateKey = (RSAPrivateKey) CertificateManager.getInstance().loadPrivateKeyFromFile(privateKeyFileName, privateKeyPassword);
+    	}
 
 		consumerKey = Settings.getConfiguration().getString("annotator.consumerKey");
 		
