@@ -262,4 +262,41 @@ public class PortalCertificateManager {
         }
         return session;
     }
+    
+    public Session getSession(HttpServletRequest request) {
+    	// initialize the session - three options
+    	Session session = null;
+    	
+    	// #1
+    	// load session from certificate in request
+    	try {
+    		session = CertificateManager.getInstance().getSession(request);
+    	} catch (Exception e) {
+    		log.warn(e.getMessage(), e);
+    	}
+    	
+        // #2
+        // check for token
+        if (session == null) {
+        	String token = request.getHeader("x-dataone-auth-token");
+        	if (token != null) {
+        		try {
+        			session = TokenGenerator.getInstance().getSession(token);
+        		} catch (Exception e) {
+            		log.warn(e.getMessage(), e);
+            	}
+        	}
+        }
+        
+        // #3 check for portal certificate
+        if (session == null) {
+        	try {
+            	session = this.registerPortalCertificateAndPlaceOnRequest(request);
+        	} catch (Exception e) {
+        		log.warn(e.getMessage(), e);
+        	}
+        }
+        
+        return session;
+    }
 }
