@@ -8,6 +8,7 @@ import java.security.cert.Certificate;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.text.ParseException;
+import java.util.Arrays;
 import java.util.Calendar;
 
 import javax.net.ssl.HttpsURLConnection;
@@ -17,8 +18,11 @@ import org.apache.commons.logging.LogFactory;
 import org.dataone.client.auth.CertificateManager;
 import org.dataone.client.v1.itk.D1Client;
 import org.dataone.configuration.Settings;
+import org.dataone.service.exceptions.BaseException;
+import org.dataone.service.types.v1.Person;
 import org.dataone.service.types.v1.Session;
 import org.dataone.service.types.v1.Subject;
+import org.dataone.service.types.v1.SubjectInfo;
 import org.dataone.service.util.DateTimeMarshaller;
 
 import com.nimbusds.jose.JOSEException;
@@ -139,6 +143,22 @@ public class TokenGenerator {
 			subject.setValue(userId);
 			session = new Session();
 			session.setSubject(subject);
+			
+			SubjectInfo subjectInfo = null;
+			try {
+				subjectInfo = D1Client.getCN().getSubjectInfo(subject);
+			} catch (BaseException be) {
+				log.warn(be.getMessage());
+			}
+			
+			// TODO: fill in more subject info if we didn't retrieve it
+			if (subjectInfo == null) {
+				subjectInfo = new SubjectInfo();
+				Person person = new Person();
+				person.setSubject(subject);
+				subjectInfo.setPersonList(Arrays.asList(person));
+			}
+			session.setSubjectInfo(subjectInfo);
 			
     	} catch (Exception e) {
     		// if we got here, we don't have a good session
