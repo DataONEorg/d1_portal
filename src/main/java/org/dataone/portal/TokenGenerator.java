@@ -73,10 +73,12 @@ public class TokenGenerator {
 		
 		// use either the configured certificate, or fetch it from the CN
 		String certificateFileName = Settings.getConfiguration().getString("cn.server.publiccert.filename");
+		log.debug("certificateFileName=" +  certificateFileName);
 		if (certificateFileName != null) {
 	    	publicKey = (RSAPublicKey) CertificateManager.getInstance().loadCertificateFromFile(certificateFileName).getPublicKey();
 		} else {
 			Certificate cert = fetchServerCertificate();
+			log.debug("using certificate from server: " +  cert);
 			if (cert != null) {
 				publicKey = (RSAPublicKey) cert.getPublicKey();
 			}
@@ -87,6 +89,7 @@ public class TokenGenerator {
     public Certificate fetchServerCertificate() {
 		try {
 			String baseUrl = D1Client.getCN().getNodeBaseServiceUrl();
+			log.debug("fetching cert from server: " +  baseUrl);
 			URL url = new URL(baseUrl);
 			HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
 			conn.connect();
@@ -148,7 +151,7 @@ public class TokenGenerator {
 			try {
 				subjectInfo = D1Client.getCN().getSubjectInfo(subject);
 			} catch (BaseException be) {
-				log.warn(be.getMessage());
+				log.warn(be.getMessage(), be);
 			}
 			
 			// TODO: fill in more subject info if we didn't retrieve it
@@ -163,6 +166,7 @@ public class TokenGenerator {
     	} catch (Exception e) {
     		// if we got here, we don't have a good session
     		log.warn("Could not get session from provided token: " + token, e);
+    		e.printStackTrace();
     		return null;
     	}
     	
