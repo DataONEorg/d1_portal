@@ -1,7 +1,5 @@
 package org.dataone.portal;
 
-import static org.junit.Assert.assertTrue;
-
 import java.io.IOException;
 import java.net.URL;
 import java.security.cert.Certificate;
@@ -140,7 +138,9 @@ public class TokenGenerator {
 	
 			// verify the signing
 			JWSVerifier verifier = new RSASSAVerifier(publicKey);
-			assertTrue(signedJWT.verify(verifier));
+			if (!signedJWT.verify(verifier)) {
+				return null;
+			}
 			
 			// check the expiration
 			Calendar now = Calendar.getInstance();
@@ -148,7 +148,9 @@ public class TokenGenerator {
 			long ttl = Long.valueOf(signedJWT.getJWTClaimsSet().getClaim("ttl").toString());
 			Calendar expiration = Calendar.getInstance();
 			expiration.setTimeInMillis(issuedAt.getTime() + ttl);
-			assertTrue(expiration.after(now));
+			if (!expiration.after(now)) {
+				return null;
+			}
 			
 			// extract user info
 			String userId = signedJWT.getJWTClaimsSet().getClaim("userId").toString();
