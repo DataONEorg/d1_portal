@@ -10,6 +10,7 @@ import java.security.interfaces.RSAPublicKey;
 import java.text.ParseException;
 import java.util.Arrays;
 import java.util.Calendar;
+import java.util.Date;
 
 import javax.net.ssl.HttpsURLConnection;
 
@@ -137,8 +138,17 @@ public class TokenGenerator {
 	    	// parse the JWS and verify it
 			SignedJWT signedJWT = SignedJWT.parse(token);
 	
+			// verify the signing
 			JWSVerifier verifier = new RSASSAVerifier(publicKey);
 			assertTrue(signedJWT.verify(verifier));
+			
+			// check the expiration
+			Calendar now = Calendar.getInstance();
+			Date issuedAt = DateTimeMarshaller.deserializeDateToUTC(signedJWT.getJWTClaimsSet().getClaim("issuedAt").toString());
+			long ttl = Long.valueOf(signedJWT.getJWTClaimsSet().getClaim("ttl").toString());
+			Calendar expiration = Calendar.getInstance();
+			expiration.setTimeInMillis(issuedAt.getTime() + ttl);
+			assertTrue(expiration.after(now));
 			
 			// extract user info
 			String userId = signedJWT.getJWTClaimsSet().getClaim("userId").toString();
