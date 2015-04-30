@@ -278,8 +278,9 @@ public class PortalCertificateManager {
         // #2
         // check for token
         if (session == null) {
-        	String token = request.getHeader("x-dataone-auth-token");
+        	String token = request.getHeader("Authorization");
         	if (token != null) {
+        		token = token.split(" ")[1];
         		try {
         			session = TokenGenerator.getInstance().getSession(token);
         		} catch (Exception e) {
