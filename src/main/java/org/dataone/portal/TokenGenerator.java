@@ -114,7 +114,7 @@ public class TokenGenerator {
 		claimsSet.setClaim("userId", userId);
 		claimsSet.setClaim("fullName", fullName);
 		claimsSet.setClaim("issuedAt", DateTimeMarshaller.serializeDateToUTC(now.getTime()));
-		claimsSet.setClaim("ttl", 86400);
+		claimsSet.setClaim("ttl", 18 * 60 * 60 * 1000); // 18 hours, like certificates
 		
 		SignedJWT signedJWT = new SignedJWT(new JWSHeader(JWSAlgorithm.RS256), claimsSet);
 
