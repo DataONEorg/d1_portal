@@ -171,6 +171,8 @@ public class TokenGenerator {
 				subjectInfo = new SubjectInfo();
 				Person person = new Person();
 				person.setSubject(subject);
+				person.setFamilyName("Unknown");
+            	person.addGivenName("Unknown");
 				subjectInfo.setPersonList(Arrays.asList(person));
 			}
 			session.setSubjectInfo(subjectInfo);
