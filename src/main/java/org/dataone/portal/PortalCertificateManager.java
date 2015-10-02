@@ -280,8 +280,8 @@ public class PortalCertificateManager {
         if (session == null) {
         	String token = request.getHeader("Authorization");
         	if (token != null) {
-        		token = token.split(" ")[1];
         		try {
+            		token = token.split(" ")[1];
         			session = TokenGenerator.getInstance().getSession(token);
         		} catch (Exception e) {
             		log.warn(e.getMessage(), e);
