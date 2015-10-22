@@ -14,6 +14,7 @@ import javax.net.ssl.HttpsURLConnection;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.dataone.client.auth.AuthTokenSession;
 import org.dataone.client.auth.CertificateManager;
 import org.dataone.client.v1.itk.D1Client;
 import org.dataone.configuration.Settings;
@@ -130,7 +131,7 @@ public class TokenGenerator {
     }
     
     public Session getSession(String token) {
-    	Session session = null;
+    	AuthTokenSession session = null;
     	
     	try {
 	    	// parse the JWS and verify it
@@ -156,7 +157,7 @@ public class TokenGenerator {
 			String userId = signedJWT.getJWTClaimsSet().getClaim("userId").toString();
 			Subject subject = new Subject();
 			subject.setValue(userId);
-			session = new Session();
+			session = new AuthTokenSession(token);
 			session.setSubject(subject);
 			
 			SubjectInfo subjectInfo = null;
