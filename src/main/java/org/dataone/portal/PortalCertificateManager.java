@@ -26,6 +26,7 @@ import java.io.File;
 import java.io.IOException;
 import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
+import java.util.logging.Handler;
 
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
@@ -33,7 +34,6 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-
 import org.dataone.client.auth.CertificateManager;
 import org.dataone.configuration.Settings;
 import org.dataone.service.types.v1.Session;
@@ -68,6 +68,20 @@ public class PortalCertificateManager {
 
     public PortalCertificateManager(String configFile) {
     	this.configFile = configFile;
+    }
+    
+    /**
+     * To prevent .lck files from persisting, we close the loggers when shutting down the system
+     * http://stackoverflow.com/questions/2723280/why-is-my-program-creating-empty-lck-files
+     * @throws Exception
+     */
+    public void closeLoggers() throws Exception {
+    	ClientEnvironment ce = ClientEnvironmentUtil.load(new File(configFile), configName);
+    	Handler[] handlers = ce.getMyLogger().getLogger().getHandlers();
+		// close the log handlers for uiuc
+		for(Handler h: handlers) {
+		    h.close();   //must call h.close or a .LCK file will remain.
+		}
     }
 
     /**
