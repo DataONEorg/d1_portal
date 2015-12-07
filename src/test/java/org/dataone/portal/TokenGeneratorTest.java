@@ -11,6 +11,7 @@ import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.cert.X509Certificate;
 import java.security.interfaces.RSAPublicKey;
+import java.util.Calendar;
 
 import org.dataone.client.auth.CertificateManager;
 import org.dataone.configuration.Settings;
@@ -78,6 +79,15 @@ public class TokenGeneratorTest {
 			
 			// Retrieve the JWT claims
 			assertEquals(userId, signedJWT.getJWTClaimsSet().getClaim("userId"));
+			assertEquals(userId, signedJWT.getJWTClaimsSet().getClaim("sub"));
+			assertEquals(userId, signedJWT.getJWTClaimsSet().getSubject());
+			
+			assertTrue(Calendar.getInstance().getTime().before(signedJWT.getJWTClaimsSet().getExpirationTime()));
+			
+			//System.out.println("sub=" + signedJWT.getJWTClaimsSet().getClaim("sub"));
+			//System.out.println("iat=" + signedJWT.getJWTClaimsSet().getClaim("iat"));
+			//System.out.println("exp=" + signedJWT.getJWTClaimsSet().getClaim("exp"));
+
     	
     	} catch (Exception e) {
     		e.printStackTrace();
