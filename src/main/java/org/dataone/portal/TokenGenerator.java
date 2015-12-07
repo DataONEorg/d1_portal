@@ -108,14 +108,25 @@ public class TokenGenerator {
     	JWSSigner signer = new RSASSASigner(privateKey);
 		
 		Calendar now = Calendar.getInstance();
+		int ttl = 18 * 60 * 60; // 18 hours, like certificates, in seconds
+		Calendar expires = Calendar.getInstance();
+		expires.setTime(now.getTime());
+		expires.add(Calendar.SECOND, ttl);
 		
 		// Prepare JWT with claims set
 		JWTClaimsSet claimsSet = new JWTClaimsSet();
+		// claims for annotator: http://docs.annotatorjs.org/en/v1.2.x/authentication.html
 		claimsSet.setClaim("consumerKey", consumerKey);
 		claimsSet.setClaim("userId", userId);
-		claimsSet.setClaim("fullName", fullName);
 		claimsSet.setClaim("issuedAt", DateTimeMarshaller.serializeDateToUTC(now.getTime()));
-		claimsSet.setClaim("ttl", 18 * 60 * 60 * 1000); // 18 hours, like certificates
+		claimsSet.setClaim("ttl", ttl); 
+		
+		claimsSet.setClaim("fullName", fullName);
+
+		// standard JWT fields: https://tools.ietf.org/html/rfc7519#section-4.1.4
+		claimsSet.setSubject(userId);
+		claimsSet.setIssueTime(now.getTime());
+		claimsSet.setExpirationTime(expires.getTime());
 		
 		SignedJWT signedJWT = new SignedJWT(new JWSHeader(JWSAlgorithm.RS256), claimsSet);
 
@@ -145,16 +156,13 @@ public class TokenGenerator {
 			
 			// check the expiration
 			Calendar now = Calendar.getInstance();
-			Date issuedAt = DateTimeMarshaller.deserializeDateToUTC(signedJWT.getJWTClaimsSet().getClaim("issuedAt").toString());
-			long ttl = Long.valueOf(signedJWT.getJWTClaimsSet().getClaim("ttl").toString());
-			Calendar expiration = Calendar.getInstance();
-			expiration.setTimeInMillis(issuedAt.getTime() + ttl);
-			if (!expiration.after(now)) {
+			Date expDate = signedJWT.getJWTClaimsSet().getExpirationTime();
+			if (!expDate.after(now.getTime())) {
 				return null;
 			}
 			
 			// extract user info
-			String userId = signedJWT.getJWTClaimsSet().getClaim("userId").toString();
+			String userId = signedJWT.getJWTClaimsSet().getSubject();
 			Subject subject = new Subject();
 			subject.setValue(userId);
 			session = new AuthTokenSession(token);
