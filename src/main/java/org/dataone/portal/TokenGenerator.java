@@ -151,6 +151,8 @@ public class TokenGenerator {
 			// verify the signing
 			JWSVerifier verifier = new RSASSAVerifier(publicKey);
 			if (!signedJWT.verify(verifier)) {
+	    		log.info("public key: " + publicKey);
+	    		log.warn("Could not use public key to verify provided token: " + token);
 				return null;
 			}
 			
@@ -158,6 +160,7 @@ public class TokenGenerator {
 			Calendar now = Calendar.getInstance();
 			Date expDate = signedJWT.getJWTClaimsSet().getExpirationTime();
 			if (!expDate.after(now.getTime())) {
+	    		log.warn("Token expiration date has passed: " + expDate);
 				return null;
 			}
 			
