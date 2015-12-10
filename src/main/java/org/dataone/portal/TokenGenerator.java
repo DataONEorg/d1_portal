@@ -174,7 +174,7 @@ public class TokenGenerator {
 			SubjectInfo subjectInfo = null;
 			try {
 				subjectInfo = D1Client.getCN().getSubjectInfo(subject);
-			} catch (BaseException be) {
+			} catch (Exception be) {
 				log.warn(be.getMessage(), be);
 			}
 			
