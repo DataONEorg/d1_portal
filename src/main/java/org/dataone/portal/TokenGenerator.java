@@ -74,7 +74,7 @@ public class TokenGenerator {
 		// use either the configured certificate, or fetch it from the CN
 		String certificateFileName = Settings.getConfiguration().getString("cn.server.publiccert.filename");
 		log.debug("certificateFileName=" +  certificateFileName);
-		if (certificateFileName != null) {
+		if (certificateFileName != null && certificateFileName.length() > 0) {
 	    	publicKey = (RSAPublicKey) CertificateManager.getInstance().loadCertificateFromFile(certificateFileName).getPublicKey();
 		} else {
 			Certificate cert = fetchServerCertificate();
