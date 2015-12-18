@@ -52,6 +52,9 @@ public class TokenGenerator {
     private RSAPublicKey publicKey = null;
 	private RSAPrivateKey privateKey = null;
 	
+	// 18 hour default, like certificates, in seconds
+	private int TTL_SECONDS = Settings.getConfiguration().getInt("token.ttl", 18 * 60 * 60); 
+	
 	public static TokenGenerator getInstance() throws IOException {
 		if (instance == null) {
 			instance = new TokenGenerator();
@@ -108,10 +111,9 @@ public class TokenGenerator {
     	JWSSigner signer = new RSASSASigner(privateKey);
 		
 		Calendar now = Calendar.getInstance();
-		int ttl = 18 * 60 * 60; // 18 hours, like certificates, in seconds
 		Calendar expires = Calendar.getInstance();
 		expires.setTime(now.getTime());
-		expires.add(Calendar.SECOND, ttl);
+		expires.add(Calendar.SECOND, TTL_SECONDS);
 		
 		// Prepare JWT with claims set
 		JWTClaimsSet claimsSet = new JWTClaimsSet();
@@ -119,7 +121,7 @@ public class TokenGenerator {
 		claimsSet.setClaim("consumerKey", consumerKey);
 		claimsSet.setClaim("userId", userId);
 		claimsSet.setClaim("issuedAt", DateTimeMarshaller.serializeDateToUTC(now.getTime()));
-		claimsSet.setClaim("ttl", ttl); 
+		claimsSet.setClaim("ttl", TTL_SECONDS); 
 		
 		claimsSet.setClaim("fullName", fullName);
 
@@ -151,7 +153,7 @@ public class TokenGenerator {
 			// verify the signing
 			JWSVerifier verifier = new RSASSAVerifier(publicKey);
 			if (!signedJWT.verify(verifier)) {
-	    		log.debug("public key: " + publicKey);
+	    		log.info("public key: " + publicKey);
 	    		log.warn("Could not use public key to verify provided token: " + token);
 				return null;
 			}
