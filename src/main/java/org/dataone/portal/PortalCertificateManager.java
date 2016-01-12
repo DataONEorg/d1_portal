@@ -277,6 +277,13 @@ public class PortalCertificateManager {
         return session;
     }
     
+    /**
+     * Gets the requests Session, either the X509 Certificate if there is one,
+     * or by checking for Authorization headers.  If neither are available,
+     * it attempts to. 
+     * @param request
+     * @return
+     */
     public Session getSession(HttpServletRequest request) {
     	// initialize the session - three options
     	Session session = null;

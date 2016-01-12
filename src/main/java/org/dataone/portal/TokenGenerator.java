@@ -67,9 +67,10 @@ public class TokenGenerator {
     	String privateKeyFileName = Settings.getConfiguration().getString("cn.server.privatekey.filename");
     	String privateKeyPassword = null;
     	
+    	CertificateManager cmInst = CertificateManager.getInstance();
     	// consumers do not need the private key
     	if (privateKeyFileName != null) {
-    		privateKey = (RSAPrivateKey) CertificateManager.getInstance().loadPrivateKeyFromFile(privateKeyFileName, privateKeyPassword);
+    		privateKey = (RSAPrivateKey) cmInst.loadPrivateKeyFromFile(privateKeyFileName, privateKeyPassword);
     	}
 
 		consumerKey = Settings.getConfiguration().getString("annotator.consumerKey");
@@ -78,17 +79,23 @@ public class TokenGenerator {
 		String certificateFileName = Settings.getConfiguration().getString("cn.server.publiccert.filename");
 		log.debug("certificateFileName=" +  certificateFileName);
 		if (certificateFileName != null && certificateFileName.length() > 0) {
-	    	publicKey = (RSAPublicKey) CertificateManager.getInstance().loadCertificateFromFile(certificateFileName).getPublicKey();
+	    	publicKey = (RSAPublicKey) cmInst.loadCertificateFromFile(certificateFileName).getPublicKey();
 		} else {
 			Certificate cert = fetchServerCertificate();
 			log.debug("using certificate from server: " +  cert);
 			if (cert != null) {
 				publicKey = (RSAPublicKey) cert.getPublicKey();
-			}
+			}  // what happens if publicKey is null?
 		}
 		
     }
 
+    /**
+     * fetches the server certificates from the remote CN using the configured
+     * CN baseurl from d1_libclient_java.  Returns the first server certificate.
+     * 
+     * @return either the Certificate or null (if problem)
+     */
     public Certificate fetchServerCertificate() {
 		try {
 			String baseUrl = D1Client.getCN().getNodeBaseServiceUrl();
@@ -110,6 +117,8 @@ public class TokenGenerator {
 		// Create RSA-signer with the private key
     	JWSSigner signer = new RSASSASigner(privateKey);
 		
+    	// Calendar instances are associated with a fixed Date, confusingly
+    	// accessed with getTime() method.  
 		Calendar now = Calendar.getInstance();
 		Calendar expires = Calendar.getInstance();
 		expires.setTime(now.getTime());
@@ -130,6 +139,9 @@ public class TokenGenerator {
 		claimsSet.setIssueTime(now.getTime());
 		claimsSet.setExpirationTime(expires.getTime());
 		
+		// purposefully skipping setting the claimsSet.setNotBeforeTime(nbf) to 
+		// avoid fussiness related to clock skew.
+		
 		SignedJWT signedJWT = new SignedJWT(new JWSHeader(JWSAlgorithm.RS256), claimsSet);
 
 		// Compute the RSA signature
@@ -142,7 +154,13 @@ public class TokenGenerator {
 		return token;
     	
     }
-    
+    /**
+     * Extracts the subject from the token string, and attempts to get the
+     * SubjectInfo from the CN.  If not able to, builds a SubjectInfo entry 
+     * from the token subject.
+     * @param token
+     * @return  a Session or null if Exceptions raised (they are logged as Warnings)
+     */
     public Session getSession(String token) {
     	AuthTokenSession session = null;
     	
@@ -165,6 +183,9 @@ public class TokenGenerator {
 	    		log.warn("Token expiration date has passed: " + expDate);
 				return null;
 			}
+			
+			// we only accept tokens generated in this class, and since we don't
+			// generate a NotBeforeTime claim, we don't need to process it.
 			
 			// extract user info
 			String userId = signedJWT.getJWTClaimsSet().getSubject();
@@ -194,7 +215,7 @@ public class TokenGenerator {
     	} catch (Exception e) {
     		// if we got here, we don't have a good session
     		log.warn("Could not get session from provided token: " + token, e);
-    		e.printStackTrace();
+//    		e.printStackTrace();
     		return null;
     	}
     	
