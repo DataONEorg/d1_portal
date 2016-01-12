@@ -12,6 +12,7 @@ import java.security.KeyPairGenerator;
 import java.security.cert.X509Certificate;
 import java.security.interfaces.RSAPublicKey;
 import java.util.Calendar;
+import java.util.Date;
 
 import org.dataone.client.auth.CertificateManager;
 import org.dataone.configuration.Settings;
@@ -34,6 +35,23 @@ public class TokenGeneratorTest {
 //		Settings.getConfiguration().setProperty("cn.server.publiccert.filename", certificatePath);
 //		Settings.getConfiguration().setProperty("cn.server.privatekey.filename", keyPath);
 
+	}
+	
+	@Test
+	public void testBasicCalendarInstanceAssumptions() throws InterruptedException {
+	    // make sure getInstance() doesn't mean it's a singleton
+	    Calendar x = Calendar.getInstance();
+	    Date now = x.getTime();
+	    Calendar y = Calendar.getInstance();
+	    System.out.println(y);
+	    if (x == y) {
+	        fail("Calendar instances are the same. Not expected");
+	    }
+	    Thread.sleep(2000);
+	    Date later = x.getTime();
+	    if (now.getTime() != later.getTime()) {
+	        fail("Calendar.getTime() should return a constant value over time (a Date object)");
+	    }
 	}
 	
 	@Test
