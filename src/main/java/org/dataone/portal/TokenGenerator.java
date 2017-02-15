@@ -222,4 +222,32 @@ public class TokenGenerator {
     	return session;
     }
     
+    /**
+     * For generating custom tokens outside of the portal workflow.
+     * These properties should be set in portal.properties:
+     * 		token.ttl=31536000
+     * 		cn.server.privatekey.filename=/Users/leinfelder/Downloads/dataone_org.key
+     * 		cn.server.publiccert.filename=/Users/leinfelder/Downloads/_.dataone.org.crt
+     * The main class should be called with <userId> and <fullName> parameters.
+     * The token will be printed to System.out
+     * @param args
+     */
+    public static void main(String[] args) {
+    
+		String userId = args[0];
+    	String fullName = "Unknown";
+    	if (args.length > 1) {
+    		fullName = args[1];
+    	}
+		String token = null;
+		try {
+			token = TokenGenerator.getInstance().getJWT(userId, fullName);
+		} catch (JOSEException | ParseException | IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+    	System.out.println(token);
+    	
+    }
+    
 }
