@@ -293,7 +293,7 @@ public class PortalCertificateManager {
     	try {
     		session = CertificateManager.getInstance().getSession(request);
     	} catch (Exception e) {
-    		log.warn(e.getMessage(), e);
+    		log.warn("For request " + request + ":"  + e.getMessage(), e);
     	}
     	
         // #2
@@ -304,8 +304,11 @@ public class PortalCertificateManager {
         		try {
             		token = token.split(" ")[1];
         			session = TokenGenerator.getInstance().getSession(token);
+        		} catch (IndexOutOfBoundsException e) {
+        		    log.warn("For request " + request + ": Could not extract a valid token from the request's Authorization header ('" 
+        		            + token + "') in order to set the Session. Continuing...");
         		} catch (Exception e) {
-            		log.warn(e.getMessage(), e);
+            		log.warn("For request " + request + ":"  + e.getMessage(), e);
             	}
         	}
         }
@@ -315,7 +318,7 @@ public class PortalCertificateManager {
         	try {
             	session = this.registerPortalCertificateAndPlaceOnRequest(request);
         	} catch (Exception e) {
-        		log.warn(e.getMessage(), e);
+        		log.warn("For request " + request + ":"  + e.getMessage(), e);
         	}
         }
         
