@@ -1,6 +1,6 @@
 /**
  * This work was created by participants in the DataONE project, and is
- * jointly copyrighted by participating institutions in DataONE. For 
+ * jointly copyrighted by participating institutions in DataONE. For
  * more information on DataONE, see our web site at http://dataone.org.
  *
  *   Copyright ${year}
@@ -14,9 +14,9 @@
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and 
+ * See the License for the specific language governing permissions and
  * limitations under the License.
- * 
+ *
  * $Id$
  */
 
@@ -63,13 +63,13 @@ public class PortalCertificateManager {
         }
         return instance;
     }
-    
+
     public PortalCertificateManager() {}
 
     public PortalCertificateManager(String configFile) {
     	this.configFile = configFile;
     }
-    
+
     /**
      * To prevent .lck files from persisting, we close the loggers when shutting down the system
      * http://stackoverflow.com/questions/2723280/why-is-my-program-creating-empty-lck-files
@@ -103,22 +103,28 @@ public class PortalCertificateManager {
 	/**
      * Sets the certificate Cookie on the response. Future interactions with
      * this service will be tied to the certificate by this cookie
-     * 
+     *
      * @param identifier
      * @param httpServletResponse
      */
     public void setCookie(String identifier, HttpServletResponse httpServletResponse) {
-        // put our d1 cookie back so we can look up the credential as needed.
-        Cookie cookie = new Cookie(ClientServlet.OA4MP_CLIENT_REQUEST_ID, identifier);
-        cookie.setMaxAge(18 * 60 * 60); // 18 hours for certificate, so the
-                                        // cookie need not be longer
-        cookie.setPath("/"); // need to cross contexts
-        httpServletResponse.addCookie(cookie);
+      // put our d1 cookie back so we can look up the credential as needed.
+    //  Cookie cookie = new Cookie(ClientServlet.OA4MP_CLIENT_REQUEST_ID, identifier);
+      //cookie.setMaxAge(18 * 60 * 60); // 18 hours for certificate, so the
+                                      // cookie need not be longer
+      //cookie.setPath("/"); // need to cross contexts
+      //httpServletResponse.addCookie(cookie);
+
+      //SameSite=None: Allow third-parties to use this cookie (needed for authentication from other domains)
+      //Secure: Only send over HTTPS
+      //Path: need to cross contexts
+      // Max-Age: 18 hours for certificate, so the cookie need not be longer
+      httpServletResponse.setHeader("Set-Cookie", ClientServlet.OA4MP_CLIENT_REQUEST_ID + "=" + identifier + "; SameSite=None; Secure; Path=/; Max-Age=" + (18 * 60 * 60));
     }
 
     /**
      * Retrieves the certificate Cookie from the request
-     * 
+     *
      * @param httpServletRequest
      * @return
      */
@@ -135,7 +141,7 @@ public class PortalCertificateManager {
 
     /**
      * Removes the certificate cookie, essentially logging out the user
-     * 
+     *
      * @param httpServletResponse
      */
     public void removeCookie(HttpServletResponse httpServletResponse) {
@@ -148,7 +154,7 @@ public class PortalCertificateManager {
 
     /**
      * Get the certificate from the store, based on the cookie (if present)
-     * 
+     *
      * @param request
      * @return
      * @throws IOException
@@ -163,7 +169,7 @@ public class PortalCertificateManager {
 
     /**
      * Get the private key from the store, based on the cookie (if present)
-     * 
+     *
      * @param request
      * @return
      * @throws IOException
@@ -178,17 +184,17 @@ public class PortalCertificateManager {
 
     /**
      * Get the credentials from the store, based on the token/identifier
-     * 
+     *
      * @param identifier
      *            for the certificate/credential
      * @return
      * @throws IOException
      */
     public Asset getCredentials(String identifier) throws Exception {
-    	
+
         if (identifier != null) {
         	ClientEnvironment ce = ClientEnvironmentUtil.load(new File(configFile), configName);
-        	
+
         	Asset asset = null;
             int attempts = 0;
             while (asset == null) {
@@ -220,7 +226,7 @@ public class PortalCertificateManager {
 
 	/**
      * Get the credentials from the store, based on the cookie (if present)
-     * 
+     *
      * @param request
      * @return
      * @throws IOException
@@ -276,18 +282,18 @@ public class PortalCertificateManager {
         }
         return session;
     }
-    
+
     /**
      * Gets the requests Session, either the X509 Certificate if there is one,
      * or by checking for Authorization headers.  If neither are available,
-     * it attempts to. 
+     * it attempts to.
      * @param request
      * @return
      */
     public Session getSession(HttpServletRequest request) {
     	// initialize the session - three options
     	Session session = null;
-    	
+
     	// #1
     	// load session from certificate in request
     	try {
@@ -295,7 +301,7 @@ public class PortalCertificateManager {
     	} catch (Exception e) {
     		log.warn("For request " + request + ":"  + e.getMessage(), e);
     	}
-    	
+
         // #2
         // check for token
         if (session == null) {
@@ -305,14 +311,14 @@ public class PortalCertificateManager {
             		token = token.split(" ")[1];
         			session = TokenGenerator.getInstance().getSession(token);
         		} catch (IndexOutOfBoundsException e) {
-        		    log.warn("For request " + request + ": Could not extract a valid token from the request's Authorization header ('" 
+        		    log.warn("For request " + request + ": Could not extract a valid token from the request's Authorization header ('"
         		            + token + "') in order to set the Session. Continuing...");
         		} catch (Exception e) {
             		log.warn("For request " + request + ":"  + e.getMessage(), e);
             	}
         	}
         }
-        
+
         // #3 check for portal certificate
         if (session == null) {
         	try {
@@ -321,7 +327,7 @@ public class PortalCertificateManager {
         		log.warn("For request " + request + ":"  + e.getMessage(), e);
         	}
         }
-        
+
         return session;
     }
 }
