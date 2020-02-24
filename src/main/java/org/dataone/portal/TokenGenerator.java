@@ -9,6 +9,8 @@ import java.text.ParseException;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import javax.net.ssl.HttpsURLConnection;
 
@@ -70,6 +72,36 @@ public class TokenGenerator {
         setPrivateKey();
         setConsumerKey();
         setPublicKey();
+
+        /* Create a timer to monitor the signing certificate every five minutes */
+        Timer timer = new Timer("Signing Certificate Monitor");
+
+        long certMonitorPeriod = 5 * 60 * 1000;
+        timer.scheduleAtFixedRate(new TimerTask() {
+            /**
+             * Check the server certificate's public key modulus for changes
+             * Update the TokenGenerator singleton if it has changed
+             */
+            @Override
+            public void run() {
+                try {
+                    Certificate certificate = fetchServerCertificate();
+                    if ( certificate != null ) {
+                        RSAPublicKey currentKey = (RSAPublicKey) certificate.getPublicKey();
+                        // Replace the singleton in-memory key if it does not match the fetched key
+                        if ( ! currentKey.getModulus().equals(publicKey.getModulus()) ) {
+                            setPublicKey();
+                            setPrivateKey();
+                            setConsumerKey();
+                        }
+                    }
+
+                } catch (Exception e) {
+                    log.warn("Couldn't fetch the server certificate for change comparison. " +
+                        e.getMessage());
+                }
+            }
+        }, new Date(), certMonitorPeriod);
     }
 
     /**
