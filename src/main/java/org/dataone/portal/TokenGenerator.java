@@ -9,6 +9,8 @@ import java.text.ParseException;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import javax.net.ssl.HttpsURLConnection;
 
@@ -61,33 +63,45 @@ public class TokenGenerator {
 		}
 		return instance;
 	}
-	
-    private TokenGenerator() throws IOException  {
-     	
-    	String privateKeyFileName = Settings.getConfiguration().getString("cn.server.privatekey.filename");
-    	String privateKeyPassword = null;
-    	
-    	CertificateManager cmInst = CertificateManager.getInstance();
-    	// consumers do not need the private key
-    	if (privateKeyFileName != null) {
-    		privateKey = (RSAPrivateKey) cmInst.loadPrivateKeyFromFile(privateKeyFileName, privateKeyPassword);
-    	}
 
-		consumerKey = Settings.getConfiguration().getString("annotator.consumerKey");
-		
-		// use either the configured certificate, or fetch it from the CN
-		String certificateFileName = Settings.getConfiguration().getString("cn.server.publiccert.filename");
-		log.debug("certificateFileName=" +  certificateFileName);
-		if (certificateFileName != null && certificateFileName.length() > 0) {
-	    	publicKey = (RSAPublicKey) cmInst.loadCertificateFromFile(certificateFileName).getPublicKey();
-		} else {
-			Certificate cert = fetchServerCertificate();
-			log.debug("using certificate from server: " +  cert);
-			if (cert != null) {
-				publicKey = (RSAPublicKey) cert.getPublicKey();
-			}  // what happens if publicKey is null?
-		}
-		
+    /*
+     * Construct a token generator
+     * @throws IOException an I/O exeption if the certificates cannot be read
+     */
+    private TokenGenerator() throws IOException  {
+        setPrivateKey();
+        setConsumerKey();
+        setPublicKey();
+
+        /* Create a timer to monitor the signing certificate every five minutes */
+        Timer timer = new Timer("Signing Certificate Monitor");
+
+        long certMonitorPeriod = 5 * 60 * 1000;
+        timer.scheduleAtFixedRate(new TimerTask() {
+            /**
+             * Check the server certificate's public key modulus for changes
+             * Update the TokenGenerator singleton if it has changed
+             */
+            @Override
+            public void run() {
+                try {
+                    Certificate certificate = fetchServerCertificate();
+                    if ( certificate != null ) {
+                        RSAPublicKey currentKey = (RSAPublicKey) certificate.getPublicKey();
+                        // Replace the singleton in-memory key if it does not match the fetched key
+                        if ( ! currentKey.getModulus().equals(publicKey.getModulus()) ) {
+                            setPublicKey();
+                            setPrivateKey();
+                            setConsumerKey();
+                        }
+                    }
+
+                } catch (Exception e) {
+                    log.warn("Couldn't fetch the server certificate for change comparison. " +
+                        e.getMessage());
+                }
+            }
+        }, new Date(), certMonitorPeriod);
     }
 
     /**
@@ -154,11 +168,53 @@ public class TokenGenerator {
 		return token;
     	
     }
+
+    /*
+     * Set the private key
+     * @throws IOException IO exception
+     */
+    private void setPrivateKey() throws IOException {
+        String privateKeyFileName = Settings.getConfiguration().getString("cn.server.privatekey.filename");
+        String privateKeyPassword = null;
+
+        CertificateManager cmInst = CertificateManager.getInstance();
+        // consumers do not need the private key
+        if (privateKeyFileName != null) {
+            privateKey = (RSAPrivateKey) cmInst.loadPrivateKeyFromFile(privateKeyFileName, privateKeyPassword);
+        }
+    }
+
+    /*
+     * Set the public key
+     * @throws IOException
+     */
+    private void setPublicKey() throws IOException {
+        // use either the configured certificate, or fetch it from the CN
+        String certificateFileName = Settings.getConfiguration().getString("cn.server.publiccert.filename");
+        CertificateManager cmInst = CertificateManager.getInstance();
+        log.debug("certificateFileName=" +  certificateFileName);
+        if (certificateFileName != null && certificateFileName.length() > 0) {
+            publicKey = (RSAPublicKey) cmInst.loadCertificateFromFile(certificateFileName).getPublicKey();
+        } else {
+            Certificate cert = fetchServerCertificate();
+            log.debug("using certificate from server: " +  cert);
+            if (cert != null) {
+                publicKey = (RSAPublicKey) cert.getPublicKey();
+            }  // what happens if publicKey is null?
+        }
+    }
+    /*
+     * Set the consumer key
+     */
+    private void setConsumerKey() {
+        consumerKey = Settings.getConfiguration().getString("annotator.consumerKey");
+    }
+
     /**
      * Extracts the subject from the token string, and attempts to get the
      * SubjectInfo from the CN.  If not able to, builds a SubjectInfo entry 
      * from the token subject.
-     * @param token
+     * @param token the given JWT token string
      * @return  a Session or null if Exceptions raised (they are logged as Warnings)
      */
     public Session getSession(String token) {
@@ -170,13 +226,23 @@ public class TokenGenerator {
 	
 			// verify the signing
 			JWSVerifier verifier = new RSASSAVerifier(publicKey);
-			if (!signedJWT.verify(verifier)) {
-	    		log.info("public key: " + publicKey);
-	    		log.warn("Could not use public key to verify provided token: " + token);
-				return null;
-			}
-			
-			// check the expiration
+            if (!signedJWT.verify(verifier)) {
+                log.info("public key: " + publicKey);
+                log.warn("Could not use public key to verify provided token: " + token);
+
+                // Reload the certificate keys in case they changed, and retry
+                setPrivateKey();
+                setPublicKey();
+                setConsumerKey();
+                verifier = new RSASSAVerifier(publicKey);
+                if ( ! signedJWT.verify(verifier)) {
+                    log.info("public key: " + publicKey);
+                    log.warn("Again, could not use public key to verify provided token: " + token);
+                    return null;
+                }
+            }
+
+            // check the expiration
 			Calendar now = Calendar.getInstance();
 			Date expDate = signedJWT.getJWTClaimsSet().getExpirationTime();
 			if (!expDate.after(now.getTime())) {
@@ -220,6 +286,34 @@ public class TokenGenerator {
     	}
     	
     	return session;
+    }
+    
+    /**
+     * For generating custom tokens outside of the portal workflow.
+     * These properties should be set in portal.properties:
+     * 		token.ttl=31536000
+     * 		cn.server.privatekey.filename=/Users/leinfelder/Downloads/dataone_org.key
+     * 		cn.server.publiccert.filename=/Users/leinfelder/Downloads/_.dataone.org.crt
+     * The main class should be called with <userId> and <fullName> parameters.
+     * The token will be printed to System.out
+     * @param args
+     */
+    public static void main(String[] args) {
+    
+		String userId = args[0];
+    	String fullName = "Unknown";
+    	if (args.length > 1) {
+    		fullName = args[1];
+    	}
+		String token = null;
+		try {
+			token = TokenGenerator.getInstance().getJWT(userId, fullName);
+		} catch (JOSEException | ParseException | IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+    	System.out.println(token);
+    	
     }
     
 }
