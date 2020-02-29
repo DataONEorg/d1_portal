@@ -93,7 +93,7 @@ public class TokenGenerator {
                             setPublicKey();
                             setPrivateKey();
                             setConsumerKey();
-                            log.info("Portal reset the private key and public certificate after the certificate was renewed. The new certificate has the mudulus " + publicKey.getModulus().toString());
+                            log.info("Portal reset the private key and public certificate after the certificate was renewed. The new certificate has the mudulus " + publicKey.getModulus().toString(16));
                         }
                     }
 
