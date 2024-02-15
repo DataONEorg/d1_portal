@@ -6,8 +6,8 @@ import java.security.cert.Certificate;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.text.ParseException;
-import java.util.Arrays;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.Date;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -20,7 +20,6 @@ import org.dataone.client.auth.AuthTokenSession;
 import org.dataone.client.auth.CertificateManager;
 import org.dataone.client.v1.itk.D1Client;
 import org.dataone.configuration.Settings;
-import org.dataone.service.exceptions.BaseException;
 import org.dataone.service.types.v1.Person;
 import org.dataone.service.types.v1.Session;
 import org.dataone.service.types.v1.Subject;
@@ -42,7 +41,7 @@ import com.nimbusds.jwt.SignedJWT;
  * AnnotateIt.org.
  *
  * @author leinfelder
- * @see "http://docs.annotatorjs.org/en/latest/authentication.html"
+ * @see "http://docs.annotatorjs.org"
  */
 public class TokenGenerator {
 
@@ -55,7 +54,7 @@ public class TokenGenerator {
     private RSAPrivateKey privateKey = null;
 
     // 18 hour default, like certificates, in seconds
-    private int TTL_SECONDS = Settings.getConfiguration().getInt("token.ttl", 18 * 60 * 60);
+    private final int TTL_SECONDS = Settings.getConfiguration().getInt("token.ttl", 18 * 60 * 60);
 
     public static TokenGenerator getInstance() throws IOException {
         if (instance == null) {
@@ -66,7 +65,7 @@ public class TokenGenerator {
 
     /*
      * Construct a token generator
-     * @throws IOException an I/O exeption if the certificates cannot be read
+     * @throws IOException an I/O exception if the certificates cannot be read
      */
     private TokenGenerator() throws IOException {
         setPrivateKey();
@@ -96,7 +95,7 @@ public class TokenGenerator {
                             log.info(
                                 "Portal reset the private key and public certificate after the "
                                 + "certificate was renewed. The new certificate has the "
-                                + "mudulus " + publicKey.getModulus().toString(16));
+                                + "modulus " + publicKey.getModulus().toString(16));
                         }
                     }
 
@@ -121,8 +120,7 @@ public class TokenGenerator {
             URL url = new URL(baseUrl);
             HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
             conn.connect();
-            Certificate serverCertificate = conn.getServerCertificates()[0];
-            return serverCertificate;
+            return conn.getServerCertificates()[0];
         } catch (Exception e) {
             log.error(e.getMessage(), e);
         }
@@ -168,10 +166,7 @@ public class TokenGenerator {
 
         // To serialize to compact form, produces something like
         // eyJhbGciOiJIUzI1NiJ9.SGVsbG8sIHdvcmxkIQ.onO9Ihudz3WkiauDO2Uhyuz0Y18UASXlSc1eS0NkWyA
-        String token = signedJWT.serialize();
-
-        return token;
-
+        return signedJWT.serialize();
     }
 
     /*
@@ -201,7 +196,7 @@ public class TokenGenerator {
             Settings.getConfiguration().getString("cn.server.publiccert.filename");
         CertificateManager cmInst = CertificateManager.getInstance();
         log.debug("certificateFileName=" + certificateFileName);
-        if (certificateFileName != null && certificateFileName.length() > 0) {
+        if (certificateFileName != null && !certificateFileName.isEmpty()) {
             publicKey =
                 (RSAPublicKey) cmInst.loadCertificateFromFile(certificateFileName).getPublicKey();
         } else {
@@ -228,7 +223,7 @@ public class TokenGenerator {
      * @return a Session or null if Exceptions raised (they are logged as Warnings)
      */
     public Session getSession(String token) {
-        AuthTokenSession session = null;
+        AuthTokenSession session;
 
         try {
             // parse the JWS and verify it
@@ -284,30 +279,28 @@ public class TokenGenerator {
                 person.setSubject(subject);
                 person.setFamilyName("Unknown");
                 person.addGivenName("Unknown");
-                subjectInfo.setPersonList(Arrays.asList(person));
+                subjectInfo.setPersonList(Collections.singletonList(person));
             }
             session.setSubjectInfo(subjectInfo);
 
         } catch (Exception e) {
             // if we got here, we don't have a good session
             log.warn("Could not get session from provided token: " + token, e);
-//            e.printStackTrace();
             return null;
         }
-
         return session;
     }
 
     /**
-     * For generating custom tokens outside of the portal workflow. These properties should be set
-     * in portal.properties:
+     * For generating custom tokens outside the portal workflow. These properties should be set in
+     * portal.properties:
      *      token.ttl=31536000
      *      cn.server.privatekey.filename=/Users/leinfelder/Downloads/dataone_org.key
      *      cn.server.publiccert.filename=/Users/leinfelder/Downloads/_.dataone.org.crt
      * The main class should be called with <userId> and <fullName> parameters. The token will be
      * printed to System.out
      *
-     * @param args
+     * @param args command-line arguments: <userId> (required) and <fullName> (optional)
      */
     public static void main(String[] args) {
 
@@ -320,11 +313,9 @@ public class TokenGenerator {
         try {
             token = TokenGenerator.getInstance().getJWT(userId, fullName);
         } catch (JOSEException | ParseException | IOException e) {
-            // TODO Auto-generated catch block
             e.printStackTrace();
         }
         System.out.println(token);
-
     }
 
 }
