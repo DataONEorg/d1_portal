@@ -27,6 +27,7 @@ import org.dataone.client.auth.AuthTokenSession;
 import org.dataone.client.auth.CertificateManager;
 import org.dataone.client.v1.itk.D1Client;
 import org.dataone.configuration.Settings;
+import org.dataone.service.exceptions.BaseException;
 import org.dataone.service.types.v1.Person;
 import org.dataone.service.types.v1.Session;
 import org.dataone.service.types.v1.Subject;
@@ -102,6 +103,7 @@ public class TokenGenerator {
                             setPublicKey();
                             setPrivateKey();
                             setConsumerKey();
+                            log.info("Portal reset the private key and public certificate after the certificate was renewed. The new certificate has the mudulus " + publicKey.getModulus().toString(16));
                         }
                     }
 
