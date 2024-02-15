@@ -74,60 +74,60 @@
         </repository>
     </repositories>
     <dependencies>
-    	<dependency>
-			<groupId>com.nimbusds</groupId>
-			<artifactId>nimbus-jose-jwt</artifactId>
-			<version>3.1.2</version>
-			<exclusions>
-				<exclusion>
-					<groupId>org.bouncycastle</groupId>
-					<artifactId>bcprov-jdk15on</artifactId>
-				</exclusion>
-			</exclusions>
-		</dependency>
-    	<dependency>
-			<groupId>edu.uiuc.ncsa.myproxy</groupId>
-			<artifactId>oa4mp-client-api</artifactId>
-			<version>3.3</version>
-		</dependency>
-		<dependency>
-			<groupId>edu.uiuc.ncsa.myproxy</groupId>
-			<artifactId>oa4mp-client-oauth1</artifactId>
-			<version>3.3</version>
-      		<type>war</type>
-		</dependency>
-     	<!--  new dependency with refactor from v1.0.7 to v3.3 -->
-    	<dependency>
-	        <groupId>edu.uiuc.ncsa.myproxy</groupId>
-	        <artifactId>oa4mp-client-loader-oauth1</artifactId>
-	        <version>3.3</version>
-    	</dependency>
-    	<dependency>
-			<groupId>javax.servlet</groupId>
-			<artifactId>javax.servlet-api</artifactId>
-			<version>3.0.1</version>
-			<scope>provided</scope>
-		</dependency>
-		<dependency>
-			<groupId>postgresql</groupId>
-  			<artifactId>postgresql</artifactId>
-  			<version>8.4-702.jdbc3</version>
-		</dependency>
-		<dependency>
+        <dependency>
+            <groupId>com.nimbusds</groupId>
+            <artifactId>nimbus-jose-jwt</artifactId>
+            <version>3.1.2</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.bouncycastle</groupId>
+                    <artifactId>bcprov-jdk15on</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>edu.uiuc.ncsa.myproxy</groupId>
+            <artifactId>oa4mp-client-api</artifactId>
+            <version>3.3</version>
+        </dependency>
+        <dependency>
+            <groupId>edu.uiuc.ncsa.myproxy</groupId>
+            <artifactId>oa4mp-client-oauth1</artifactId>
+            <version>3.3</version>
+              <type>war</type>
+        </dependency>
+         <!--  new dependency with refactor from v1.0.7 to v3.3 -->
+        <dependency>
+            <groupId>edu.uiuc.ncsa.myproxy</groupId>
+            <artifactId>oa4mp-client-loader-oauth1</artifactId>
+            <version>3.3</version>
+        </dependency>
+        <dependency>
+            <groupId>javax.servlet</groupId>
+            <artifactId>javax.servlet-api</artifactId>
+            <version>3.0.1</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>postgresql</groupId>
+              <artifactId>postgresql</artifactId>
+              <version>8.4-702.jdbc3</version>
+        </dependency>
+        <dependency>
             <groupId>commons-codec</groupId>
             <artifactId>commons-codec</artifactId>
             <version>1.4</version>
         </dependency>
-		<dependency>
-			<groupId>org.dataone</groupId>
-			<artifactId>d1_libclient_java</artifactId>
-			<version>${d1_libclient_java.version}</version>
-			<type>jar</type>
-			<exclusions>
-            	<exclusion>
-            		<artifactId>commons-codec</artifactId>
-            		<groupId>commons-codec</groupId>
-            	</exclusion>
+        <dependency>
+            <groupId>org.dataone</groupId>
+            <artifactId>d1_libclient_java</artifactId>
+            <version>${d1_libclient_java.version}</version>
+            <type>jar</type>
+            <exclusions>
+                <exclusion>
+                    <artifactId>commons-codec</artifactId>
+                    <groupId>commons-codec</groupId>
+                </exclusion>
             </exclusions>
         </dependency>
         <dependency>
