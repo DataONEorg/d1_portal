@@ -59,7 +59,8 @@ public class TokenGeneratorTest {
         X509Certificate certificate;
         try {
             certificate = (X509Certificate) TokenGenerator.getInstance().fetchServerCertificate();
-			assertTrue(CertificateManager.getInstance().getSubjectDN(certificate).contains("dataone.org"));
+            assertTrue(
+                CertificateManager.getInstance().getSubjectDN(certificate).contains("dataone.org"));
         } catch (IOException e) {
             fail(e.getMessage());
         }
@@ -80,8 +81,10 @@ public class TokenGeneratorTest {
             SignedJWT signedJWT = SignedJWT.parse(token);
 
             // verify
-	    	String certificateFileName = Settings.getConfiguration().getString("cn.server.publiccert.filename");
-			RSAPublicKey publicKey = (RSAPublicKey) CertificateManager.getInstance().loadCertificateFromFile(certificateFileName).getPublicKey();
+            String certificateFileName =
+                Settings.getConfiguration().getString("cn.server.publiccert.filename");
+            RSAPublicKey publicKey = (RSAPublicKey) CertificateManager.getInstance()
+                .loadCertificateFromFile(certificateFileName).getPublicKey();
 
             JWSVerifier verifier = new RSASSAVerifier(publicKey);
             assertTrue(signedJWT.verify(verifier));
@@ -100,7 +103,8 @@ public class TokenGeneratorTest {
             assertEquals(userId, signedJWT.getJWTClaimsSet().getClaim("sub"));
             assertEquals(userId, signedJWT.getJWTClaimsSet().getSubject());
 
-			assertTrue(Calendar.getInstance().getTime().before(signedJWT.getJWTClaimsSet().getExpirationTime()));
+            assertTrue(Calendar.getInstance().getTime()
+                           .before(signedJWT.getJWTClaimsSet().getExpirationTime()));
 
             //System.out.println("sub=" + signedJWT.getJWTClaimsSet().getClaim("sub"));
             //System.out.println("iat=" + signedJWT.getJWTClaimsSet().getClaim("iat"));
@@ -114,5 +118,4 @@ public class TokenGeneratorTest {
 
     }
 
-    
 }

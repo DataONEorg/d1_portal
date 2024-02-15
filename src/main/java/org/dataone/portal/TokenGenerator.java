@@ -38,11 +38,11 @@ import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 
 /**
- * Class for generating JSON web tokens for authenticated users.
- * Targeting this for use with AnnotateIt.org.
- * @see "http://docs.annotatorjs.org/en/latest/authentication.html"
- * @author leinfelder
+ * Class for generating JSON web tokens for authenticated users. Targeting this for use with
+ * AnnotateIt.org.
  *
+ * @author leinfelder
+ * @see "http://docs.annotatorjs.org/en/latest/authentication.html"
  */
 public class TokenGenerator {
 
@@ -93,21 +93,24 @@ public class TokenGenerator {
                             setPublicKey();
                             setPrivateKey();
                             setConsumerKey();
-                            log.info("Portal reset the private key and public certificate after the certificate was renewed. The new certificate has the mudulus " + publicKey.getModulus().toString(16));
+                            log.info(
+                                "Portal reset the private key and public certificate after the "
+                                + "certificate was renewed. The new certificate has the "
+                                + "mudulus " + publicKey.getModulus().toString(16));
                         }
                     }
 
                 } catch (Exception e) {
-                    log.warn("Couldn't fetch the server certificate for change comparison. " +
-                        e.getMessage());
+                    log.warn("Couldn't fetch the server certificate for change comparison. "
+                                 + e.getMessage());
                 }
             }
         }, new Date(), certMonitorPeriod);
     }
 
     /**
-     * fetches the server certificates from the remote CN using the configured
-     * CN baseurl from d1_libclient_java.  Returns the first server certificate.
+     * fetches the server certificates from the remote CN using the configured CN baseurl from
+     * d1_libclient_java.  Returns the first server certificate.
      *
      * @return either the Certificate or null (if problem)
      */
@@ -127,7 +130,8 @@ public class TokenGenerator {
         return null;
     }
 
-	public String getJWT(String userId, String fullName) throws JOSEException, ParseException, IOException {
+    public String getJWT(String userId, String fullName)
+        throws JOSEException, ParseException, IOException {
 
         // Create RSA-signer with the private key
         JWSSigner signer = new RSASSASigner(privateKey);
@@ -175,13 +179,15 @@ public class TokenGenerator {
      * @throws IOException IO exception
      */
     private void setPrivateKey() throws IOException {
-        String privateKeyFileName = Settings.getConfiguration().getString("cn.server.privatekey.filename");
+        String privateKeyFileName =
+            Settings.getConfiguration().getString("cn.server.privatekey.filename");
         String privateKeyPassword = null;
 
         CertificateManager cmInst = CertificateManager.getInstance();
         // consumers do not need the private key
         if (privateKeyFileName != null) {
-            privateKey = (RSAPrivateKey) cmInst.loadPrivateKeyFromFile(privateKeyFileName, privateKeyPassword);
+            privateKey = (RSAPrivateKey) cmInst.loadPrivateKeyFromFile(privateKeyFileName,
+                                                                       privateKeyPassword);
         }
     }
 
@@ -191,11 +197,13 @@ public class TokenGenerator {
      */
     private void setPublicKey() throws IOException {
         // use either the configured certificate, or fetch it from the CN
-        String certificateFileName = Settings.getConfiguration().getString("cn.server.publiccert.filename");
+        String certificateFileName =
+            Settings.getConfiguration().getString("cn.server.publiccert.filename");
         CertificateManager cmInst = CertificateManager.getInstance();
         log.debug("certificateFileName=" + certificateFileName);
         if (certificateFileName != null && certificateFileName.length() > 0) {
-            publicKey = (RSAPublicKey) cmInst.loadCertificateFromFile(certificateFileName).getPublicKey();
+            publicKey =
+                (RSAPublicKey) cmInst.loadCertificateFromFile(certificateFileName).getPublicKey();
         } else {
             Certificate cert = fetchServerCertificate();
             log.debug("using certificate from server: " + cert);
@@ -204,6 +212,7 @@ public class TokenGenerator {
             }  // what happens if publicKey is null?
         }
     }
+
     /*
      * Set the consumer key
      */
@@ -212,9 +221,9 @@ public class TokenGenerator {
     }
 
     /**
-     * Extracts the subject from the token string, and attempts to get the
-     * SubjectInfo from the CN.  If not able to, builds a SubjectInfo entry 
-     * from the token subject.
+     * Extracts the subject from the token string, and attempts to get the SubjectInfo from the CN.
+     * If not able to, builds a SubjectInfo entry from the token subject.
+     *
      * @param token the given JWT token string
      * @return a Session or null if Exceptions raised (they are logged as Warnings)
      */
@@ -290,13 +299,14 @@ public class TokenGenerator {
     }
 
     /**
-     * For generating custom tokens outside of the portal workflow.
-     * These properties should be set in portal.properties:
+     * For generating custom tokens outside of the portal workflow. These properties should be set
+     * in portal.properties:
      *      token.ttl=31536000
      *      cn.server.privatekey.filename=/Users/leinfelder/Downloads/dataone_org.key
      *      cn.server.publiccert.filename=/Users/leinfelder/Downloads/_.dataone.org.crt
-     * The main class should be called with <userId> and <fullName> parameters.
-     * The token will be printed to System.out
+     * The main class should be called with <userId> and <fullName> parameters. The token will be
+     * printed to System.out
+     *
      * @param args
      */
     public static void main(String[] args) {
