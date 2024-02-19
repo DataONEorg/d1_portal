@@ -2,20 +2,19 @@ package org.dataone.portal;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.io.IOException;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
-import java.security.NoSuchAlgorithmException;
 import java.security.cert.X509Certificate;
 import java.security.interfaces.RSAPublicKey;
-import java.text.ParseException;
 import java.util.Calendar;
 import java.util.Date;
 
-import com.nimbusds.jose.JOSEException;
+import org.dataone.service.types.v1.Session;
 import org.dataone.client.auth.CertificateManager;
 import org.dataone.configuration.Settings;
 import org.junit.Test;
@@ -23,6 +22,7 @@ import org.junit.Test;
 import com.nimbusds.jose.JWSVerifier;
 import com.nimbusds.jose.crypto.RSASSAVerifier;
 import com.nimbusds.jwt.SignedJWT;
+
 
 public class TokenGeneratorTest {
 
@@ -56,8 +56,8 @@ public class TokenGeneratorTest {
 
 
     @Test
-    public void testGetJWT()
-        throws IOException, ParseException, JOSEException, NoSuchAlgorithmException {
+    public void testGetJWT() throws Exception {
+
         String userId = "test";
         String fullName = "Jane Scientist";
         String token = TokenGenerator.getInstance().getJWT(userId, fullName);
@@ -92,4 +92,17 @@ public class TokenGeneratorTest {
                        .before(signedJWT.getJWTClaimsSet().getExpirationTime()));
     }
 
+    @Test
+    public void testGetSession() throws Exception {
+
+        String userId = "test2";
+        String UNKNOWN = "Unknown";
+        String token = TokenGenerator.getInstance().getJWT(userId, "Full Name");
+
+        Session session = TokenGenerator.getInstance().getSession(token);
+        assertNotNull(session);
+        assertEquals(userId, session.getSubject().getValue());
+        assertEquals(UNKNOWN, session.getSubjectInfo().getPerson(0).getGivenName(0));
+        assertEquals(UNKNOWN, session.getSubjectInfo().getPerson(0).getFamilyName());
+    }
 }
