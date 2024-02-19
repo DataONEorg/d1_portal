@@ -176,13 +176,12 @@ public class TokenGenerator {
     private void setPrivateKey() throws IOException {
         String privateKeyFileName =
             Settings.getConfiguration().getString("cn.server.privatekey.filename");
-        String privateKeyPassword = null;
 
         CertificateManager cmInst = CertificateManager.getInstance();
         // consumers do not need the private key
         if (privateKeyFileName != null) {
-            privateKey = (RSAPrivateKey) cmInst.loadPrivateKeyFromFile(privateKeyFileName,
-                                                                       privateKeyPassword);
+            // uses a null password:
+            privateKey = (RSAPrivateKey) cmInst.loadPrivateKeyFromFile(privateKeyFileName, null);
         }
     }
 

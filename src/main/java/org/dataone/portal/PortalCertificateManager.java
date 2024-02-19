@@ -90,22 +90,15 @@ public class PortalCertificateManager {
      * @param httpServletResponse
      */
     public void setCookie(String identifier, HttpServletResponse httpServletResponse) {
-        // put our d1 cookie back so we can look up the credential as needed.
-        //  Cookie cookie = new Cookie(ClientServlet.OA4MP_CLIENT_REQUEST_ID, identifier);
-        //cookie.setMaxAge(18 * 60 * 60); // 18 hours for certificate, so the
-        // cookie need not be longer
-        //cookie.setPath("/"); // need to cross contexts
-        //httpServletResponse.addCookie(cookie);
-
-        //SameSite=None: Allow third-parties to use this cookie (needed for authentication from
-        // other domains)
-        //Secure: Only send over HTTPS
-        //Path: need to cross contexts
-        // Max-Age: 18 hours for certificate, so the cookie need not be longer
+        // SameSite=None:   Allow third-parties to use this cookie (needed for authentication from
+        //                  other domains)
+        // Secure:          Only send over HTTPS
+        // Path:            Need to cross contexts
+        // Max-Age:         18 hours for certificate, so the cookie need not be longer
         httpServletResponse.setHeader("Set-Cookie",
                                       ClientServlet.OA4MP_CLIENT_REQUEST_ID + "=" + identifier
-                                          + "; SameSite=None; Secure; Path=/; Max-Age=" + (18 * 60
-                                          * 60));
+                                          + "; SameSite=None; Secure; Path=/; Max-Age="
+                                          + (18 * 60 * 60));
     }
 
     /**
@@ -220,7 +213,7 @@ public class PortalCertificateManager {
      */
     public Asset getCredentials(HttpServletRequest request) throws Exception {
         Cookie[] cookies = request.getCookies();
-        String identifier = null;
+        String identifier;
         if (cookies != null) {
             for (Cookie cookie : cookies) {
                 if (cookie.getName().equals(ClientServlet.OA4MP_CLIENT_REQUEST_ID)) {
@@ -255,7 +248,7 @@ public class PortalCertificateManager {
         if (certificate != null) {
             PrivateKey key = PortalCertificateManager.getInstance().getPrivateKey(request);
             String subjectName = CertificateManager.getInstance().getSubjectDN(certificate);
-            if (subjectName != null && key != null && certificate != null) {
+            if (subjectName != null && key != null) {
                 CertificateManager.getInstance().registerCertificate(subjectName, certificate, key);
             }
         }
