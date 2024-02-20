@@ -95,9 +95,9 @@ public class TokenGenerator {
             @Override
             public void run() {
                 try {
-                    Certificate NewServerCert = fetchServerCertificate();
-                    if (NewServerCert != null) {
-                        RSAPublicKey newPubKey = (RSAPublicKey) NewServerCert.getPublicKey();
+                    Certificate newServerCert = fetchServerCertificate();
+                    if (newServerCert != null) {
+                        RSAPublicKey newPubKey = (RSAPublicKey) newServerCert.getPublicKey();
                         // Replace the singleton in-memory key if it does not match the fetched key
                         if (!newPubKey.getModulus().equals(serverPublicKey.getModulus())) {
                             setAllKeys();
@@ -185,7 +185,7 @@ public class TokenGenerator {
      * Set the private key
      * @throws IOException IO exception
      */
-    private void setPrivateKey() throws IOException {
+    private synchronized void setPrivateKey() throws IOException {
         String privateKeyFileName =
             Settings.getConfiguration().getString("cn.server.privatekey.filename");
 
@@ -201,7 +201,7 @@ public class TokenGenerator {
      * Set the public key
      * @throws IOException
      */
-    protected void setPublicKeys() throws IOException {
+    protected synchronized void setPublicKeys() throws IOException {
 
         publicKeys = new ArrayList<>();
         List<BigInteger> publicKeyModuli = new ArrayList<>();
