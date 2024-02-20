@@ -40,11 +40,7 @@ public class PortalCertificateManager {
 
     public static PortalCertificateManager getInstance() {
         if (instance == null) {
-            synchronized (PortalCertificateManager.class) {
-                if (instance == null) {
-                    instance = new PortalCertificateManager();
-                }
-            }
+            instance = new PortalCertificateManager();
         }
         return instance;
     }

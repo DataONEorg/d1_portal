@@ -66,11 +66,7 @@ public class TokenGenerator {
 
     public static TokenGenerator getInstance() throws IOException {
         if (instance == null) {
-            synchronized (TokenGenerator.class) {
-                if (instance == null) {
-                    instance = new TokenGenerator();
-                }
-            }
+            instance = new TokenGenerator();
         }
         return instance;
     }
