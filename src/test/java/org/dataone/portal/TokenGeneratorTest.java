@@ -8,11 +8,15 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.cert.X509Certificate;
 import java.security.interfaces.RSAPublicKey;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Calendar;
 import java.util.Date;
 
@@ -30,6 +34,10 @@ public class TokenGeneratorTest {
 
     public static final String TEST_USER_ID = "test-user-id";
     public static final String TEST_FULL_NAME = "Jane Scientist";
+    public static final String PUB_CERT_KEY = "cn.server.publiccert.filename";
+    private static final String CERT_BASE = "src/test/resources/org/dataone/portal/";
+    public static final String LOCAL_CERT_1 = CERT_BASE + "unitTestSelfSignedCert.pem";
+    public static final String LOCAL_CERT_2 = CERT_BASE + "unitTestSelfSignedCert2.pem";
 
     @Test
     public void testBasicCalendarInstanceAssumptions() {
@@ -48,17 +56,10 @@ public class TokenGeneratorTest {
     }
 
     @Test
-    public void testFetchServerCertificate() {
-        X509Certificate certificate;
-        try {
-            certificate = (X509Certificate) TokenGenerator.getInstance().fetchServerCertificate();
-            assertTrue(
-                CertificateManager.getInstance().getSubjectDN(certificate).contains("dataone.org"));
-        } catch (IOException e) {
-            fail(e.getMessage());
-        }
+    public void testFetchServerCertificate() throws IOException {
+        assertTrue(CertificateManager.getInstance().getSubjectDN(fetchServerCertificate())
+                       .contains("dataone.org"));
     }
-
 
     @Test
     public void testGetJWT() throws Exception {
@@ -68,7 +69,7 @@ public class TokenGeneratorTest {
 
         // verify
         String certificateFileName =
-            Settings.getConfiguration().getString("cn.server.publiccert.filename");
+            Settings.getConfiguration().getString(PUB_CERT_KEY);
         RSAPublicKey publicKey = (RSAPublicKey) CertificateManager.getInstance()
             .loadCertificateFromFile(certificateFileName).getPublicKey();
 
@@ -104,115 +105,167 @@ public class TokenGeneratorTest {
     @Test
     public void testGetSession_multipleCerts() throws Exception {
 
-        // save original values so we can clean up afterwards
+        // save original values so we can clean up afterward
         String pvtKeyKey = "cn.server.privatekey.filename";
         String origPvtKey = Settings.getConfiguration().getString(pvtKeyKey);
-        String pubCertkey = "cn.server.publiccert.filename";
-        String origLocalCert = Settings.getConfiguration().getString(pubCertkey);
+        String origLocalCert = Settings.getConfiguration().getString(PUB_CERT_KEY);
         String cnUrlKey = "D1Client.CN_URL";
         String origCnUrl = Settings.getConfiguration().getString(cnUrlKey);
         ////////
 
-        // these pem files contain both the private and public keys
-        String cert1 = "src/test/resources/org/dataone/portal/unitTestSelfSignedCert.pem";
-        String cert2 = "src/test/resources/org/dataone/portal/unitTestSelfSignedCert2.pem";
-
         // should fail: sign with pvt key 1; verify against pub key 2
-        Settings.getConfiguration().setProperty(pvtKeyKey, cert1);
-        Settings.getConfiguration().setProperty(pubCertkey, cert2);
+        Settings.getConfiguration().setProperty(pvtKeyKey, LOCAL_CERT_1);
+        Settings.getConfiguration().setProperty(PUB_CERT_KEY, LOCAL_CERT_2);
         TokenGenerator.getInstance().setPublicKeys();
 
         Session session = TokenGenerator.getInstance().getSession(getTestToken());
         assertNull(session);
         // should be 2 certs in store: one from CN and 1 local
-        assertEquals(Arrays.toString(TokenGenerator.publicKeys.toArray()),
-                     2, TokenGenerator.publicKeys.size());
+        assertEquals(Arrays.toString(TokenGenerator.publicKeys.toArray()), 2,
+                     TokenGenerator.publicKeys.size());
 
         // should fail: sign with pvt key 2; verify against pub key 1
-        Settings.getConfiguration().setProperty(pvtKeyKey, cert1);
-        Settings.getConfiguration().setProperty(pubCertkey, cert2);
+        Settings.getConfiguration().setProperty(pvtKeyKey, LOCAL_CERT_1);
+        Settings.getConfiguration().setProperty(PUB_CERT_KEY, LOCAL_CERT_2);
         TokenGenerator.getInstance().setPublicKeys();
 
         session = TokenGenerator.getInstance().getSession(getTestToken());
         assertNull(session);
         // should be 2 certs in store: one from CN and 1 local
-        assertEquals(Arrays.toString(TokenGenerator.publicKeys.toArray()),
-                     2, TokenGenerator.publicKeys.size());
+        assertEquals(Arrays.toString(TokenGenerator.publicKeys.toArray()), 2,
+                     TokenGenerator.publicKeys.size());
 
         // should pass: sign with pvt key 1; verify against pvt keys 1 & 2
-        Settings.getConfiguration().setProperty(pvtKeyKey, cert1);
-        Settings.getConfiguration().setProperty(pubCertkey, cert2 + ";" + cert1);
+        Settings.getConfiguration().setProperty(pvtKeyKey, LOCAL_CERT_1);
+        Settings.getConfiguration().setProperty(PUB_CERT_KEY, LOCAL_CERT_2 + ";" + LOCAL_CERT_1);
         TokenGenerator.getInstance().setPublicKeys();
 
         session = TokenGenerator.getInstance().getSession(getTestToken());
         assertNotNull(session);
         assertEquals(TEST_USER_ID, session.getSubject().getValue());
         // should be 3 certs in store: one from CN and 2 local
-        assertEquals(Arrays.toString(TokenGenerator.publicKeys.toArray()),
-                     3, TokenGenerator.publicKeys.size());
+        assertEquals(Arrays.toString(TokenGenerator.publicKeys.toArray()), 3,
+                     TokenGenerator.publicKeys.size());
 
         // should pass: sign with pvt key 2; verify against pvt keys 1 & 2
-        Settings.getConfiguration().setProperty(pvtKeyKey, cert2);
-        Settings.getConfiguration().setProperty(pubCertkey, cert1 + ";" + cert2);
+        Settings.getConfiguration().setProperty(pvtKeyKey, LOCAL_CERT_2);
+        Settings.getConfiguration().setProperty(PUB_CERT_KEY, LOCAL_CERT_1 + ";" + LOCAL_CERT_2);
         TokenGenerator.getInstance().setPublicKeys();
 
         session = TokenGenerator.getInstance().getSession(getTestToken());
         assertNotNull(session);
         assertEquals(TEST_USER_ID, session.getSubject().getValue());
         // should be 3 certs in store: one from CN and 2 local
-        assertEquals(Arrays.toString(TokenGenerator.publicKeys.toArray()),
-                     3, TokenGenerator.publicKeys.size());
+        assertEquals(Arrays.toString(TokenGenerator.publicKeys.toArray()), 3,
+                     TokenGenerator.publicKeys.size());
 
         // clean up
         Settings.getConfiguration().setProperty(pvtKeyKey, origPvtKey);
-        Settings.getConfiguration().setProperty(pubCertkey, origLocalCert);
+        Settings.getConfiguration().setProperty(PUB_CERT_KEY, origLocalCert);
         Settings.getConfiguration().setProperty(cnUrlKey, origCnUrl);
     }
 
     @Test
     public void testSetPublicKeys_multipleCerts() throws Exception {
 
-        String pubCertKey = "cn.server.publiccert.filename";
-        String orig = Settings.getConfiguration().getString(pubCertKey);
-        String validLocalCert = "src/test/resources/org/dataone/portal/unitTestSelfSignedCert.pem";
+        String orig = Settings.getConfiguration().getString(PUB_CERT_KEY);
         String bogusLocalCert = "/tmp/nonExistentCert.pem";
 
-        Settings.getConfiguration().clearProperty(pubCertKey);
+        ///////////////////////////////////////////
+        // Verify code can handle missing config
+        // (i.e. backwards compatible)
+        ///////////////////////////////////////////
+        Settings.getConfiguration().clearProperty(PUB_CERT_KEY);
         TokenGenerator.getInstance().setPublicKeys();
         // should be 1 public key total: none from disk & one from CN server
-        assertEquals(Arrays.toString(TokenGenerator.publicKeys.toArray()),
-                     1, TokenGenerator.publicKeys.size());
+        assertEquals(Arrays.toString(TokenGenerator.publicKeys.toArray()), 1,
+                     TokenGenerator.publicKeys.size());
 
-        Settings.getConfiguration().addProperty(pubCertKey, null);
+        Settings.getConfiguration().addProperty(PUB_CERT_KEY, null);
         TokenGenerator.getInstance().setPublicKeys();
         // should be 1 public key total: none from disk & one from CN server
-        assertEquals(Arrays.toString(TokenGenerator.publicKeys.toArray()),
-                     1, TokenGenerator.publicKeys.size());
+        assertEquals(Arrays.toString(TokenGenerator.publicKeys.toArray()), 1,
+                     TokenGenerator.publicKeys.size());
 
-        Settings.getConfiguration().setProperty(pubCertKey, validLocalCert);
+        ///////////////////////////////////////////
+        // Verify 1 local cert & 1 server cert case
+        // (i.e. backwards compatible)
+        ///////////////////////////////////////////
+        Settings.getConfiguration().setProperty(PUB_CERT_KEY, LOCAL_CERT_1);
         TokenGenerator.getInstance().setPublicKeys();
         // should be 2 public keys total: one from disk & one from CN server
-        assertEquals(Arrays.toString(TokenGenerator.publicKeys.toArray()),
-                     2, TokenGenerator.publicKeys.size());
+        assertEquals(Arrays.toString(TokenGenerator.publicKeys.toArray()), 2,
+                     TokenGenerator.publicKeys.size());
 
-        Settings.getConfiguration().setProperty(pubCertKey, validLocalCert + ";" + bogusLocalCert);
+        ///////////////////////////////////////////
+        // Verify 1 present & 1 missing local cert
+        ///////////////////////////////////////////
+        Settings.getConfiguration()
+            .setProperty(PUB_CERT_KEY, LOCAL_CERT_1 + ";" + bogusLocalCert);
         TokenGenerator.getInstance().setPublicKeys();
-        // should be 2 public keys total: one from disk & one from CN server. Other one from disk
+        // should be 2 public keys total: one from disk & one from CN server. Other one from
+        // disk
         // was a bogus path
-        assertEquals(Arrays.toString(TokenGenerator.publicKeys.toArray()),
-                     2, TokenGenerator.publicKeys.size());
+        assertEquals(Arrays.toString(TokenGenerator.publicKeys.toArray()), 2,
+                     TokenGenerator.publicKeys.size());
 
-        Settings.getConfiguration().setProperty(pubCertKey, validLocalCert + ";" + validLocalCert);
+        ///////////////////////////////////////////
+        // Verify duplicate local certs appear once
+        ///////////////////////////////////////////
+        Settings.getConfiguration()
+            .setProperty(PUB_CERT_KEY, LOCAL_CERT_1 + ";" + LOCAL_CERT_1);
         TokenGenerator.getInstance().setPublicKeys();
         // should be 2 public keys total: one from disk & one from CN server.
         // Other one from disk was a repeat
-        assertEquals(Arrays.toString(TokenGenerator.publicKeys.toArray()),
-                     2, TokenGenerator.publicKeys.size());
+        assertEquals(Arrays.toString(TokenGenerator.publicKeys.toArray()), 2,
+                     TokenGenerator.publicKeys.size());
 
-        Settings.getConfiguration().setProperty(pubCertKey, orig);
+        Settings.getConfiguration().setProperty(PUB_CERT_KEY, orig);
+    }
+
+    @Test
+    public void testSetPublicKeys_ordering() throws Exception {
+        ////////////////////////////////////////////////////
+        // Verify duplicate server & local certs appear once
+        // and server cert appears first in list
+        ////////////////////////////////////////////////////
+        X509Certificate serverCertCopy = fetchServerCertificate();
+        assertNotNull(serverCertCopy);
+        String locServerCertCopy = CERT_BASE + "unitTestLocalServerCertCopy.pem";
+        Path serverCertCopyFile = null;
+        try {
+            String encodedCert = Base64.getEncoder().encodeToString(serverCertCopy.getEncoded());
+
+            // Wrap the encoded certificate with PEM headers and footers
+            String pemCert = "-----BEGIN CERTIFICATE-----\n" + encodedCert + "\n-----END CERTIFICATE-----";
+
+            // Write the PEM formatted certificate to a file
+            serverCertCopyFile = Files.write(Paths.get(locServerCertCopy), pemCert.getBytes());
+            Settings.getConfiguration().setProperty(
+                PUB_CERT_KEY, LOCAL_CERT_1 + ";" + locServerCertCopy + ";" + LOCAL_CERT_2);
+            TokenGenerator.getInstance().setPublicKeys();
+
+            // should be 3 public keys total: two from disk & one from CN server.
+            // Other one from disk was a repeat of server one
+            assertEquals(Arrays.toString(TokenGenerator.publicKeys.toArray()), 3,
+                         TokenGenerator.publicKeys.size());
+
+            // Ensure server cert appears first in list
+            RSAPublicKey serverPubKey = (RSAPublicKey) serverCertCopy.getPublicKey();
+            assertEquals(serverPubKey, TokenGenerator.publicKeys.get(0));
+        } finally {
+            // delete file
+            if (serverCertCopyFile != null) {
+                Files.deleteIfExists(serverCertCopyFile);
+            }
+        }
     }
 
     private String getTestToken() throws Exception {
         return TokenGenerator.getInstance().getJWT(TEST_USER_ID, TEST_FULL_NAME);
+    }
+
+    private X509Certificate fetchServerCertificate() throws IOException {
+        return (X509Certificate) TokenGenerator.getInstance().fetchServerCertificate();
     }
 }

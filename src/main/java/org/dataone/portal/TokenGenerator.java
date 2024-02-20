@@ -57,7 +57,7 @@ public class TokenGenerator {
 
     private String consumerKey = null;
     protected static List<RSAPublicKey> publicKeys = null;
-    private RSAPublicKey serverPublicKey;
+    private BigInteger serverPubKeyModulus;
     private RSAPrivateKey privateKey = null;
 
     // 18 hour default, like certificates, in seconds
@@ -99,12 +99,12 @@ public class TokenGenerator {
                     if (newServerCert != null) {
                         RSAPublicKey newPubKey = (RSAPublicKey) newServerCert.getPublicKey();
                         // Replace the singleton in-memory key if it does not match the fetched key
-                        if (!newPubKey.getModulus().equals(serverPublicKey.getModulus())) {
+                        if (!newPubKey.getModulus().equals(serverPubKeyModulus)) {
                             setAllKeys();
                             log.info(
                                 "Portal reset the private key and public certificate after the "
                                 + "certificate was renewed. The new certificate has the "
-                                + "modulus " + serverPublicKey.getModulus().toString(16));
+                                + "modulus " + serverPubKeyModulus);
                         }
                     }
                 } catch (Exception e) {
@@ -205,41 +205,53 @@ public class TokenGenerator {
 
         publicKeys = new ArrayList<>();
         List<BigInteger> publicKeyModuli = new ArrayList<>();
+        BigInteger currentKeyModulus;
 
-        // use the configured certificate, if it exists, and also the one fetched from the CN
+        // Always add the CN server cert as the first list item, to reduce lookup time, since
+        // this is the most-used cert
+        Certificate cert = fetchServerCertificate();
+        if (cert != null) {
+            RSAPublicKey serverPublicKey = (RSAPublicKey) cert.getPublicKey();
+            publicKeys.add(serverPublicKey);
+
+            // keep a global copy of public key modulus, so we can periodically check if it's been
+            // updated
+            serverPubKeyModulus = serverPublicKey.getModulus();
+            publicKeyModuli.add(serverPubKeyModulus);
+
+            log.info("Successfully added cert from CN server, with modulus beginning: "
+                         + serverPubKeyModulus.toString().substring(0, 10) + "...");
+        } else {
+            log.warn("There was a problem retrieving the Certificate from the server.");
+        }
+
+        // now add any local certificates, if configured
         String[] certificateFileNames =
             Settings.getConfiguration().getStringArray("cn.server.publiccert.filename");
         if (certificateFileNames == null) {
             log.info("No local certs defined in Settings");
             certificateFileNames = new String[0];
         }
-        CertificateManager cmInst = CertificateManager.getInstance();
         log.debug("certificateFileNames: \n" + Arrays.toString(certificateFileNames));
         for (String certFileName : certificateFileNames) {
             if (!Files.isReadable(Paths.get(certFileName))) {
                 log.warn("Certificate file " + certFileName + " does not exist.");
                 continue;
             }
-            RSAPublicKey currentKey =
-                (RSAPublicKey) cmInst.loadCertificateFromFile(certFileName).getPublicKey();
-            BigInteger currentKeyModulus = currentKey.getModulus();
+            RSAPublicKey currentKey = (RSAPublicKey) CertificateManager.getInstance()
+                .loadCertificateFromFile(certFileName).getPublicKey();
+
+            currentKeyModulus = currentKey.getModulus();
+
             if (publicKeyModuli.contains(currentKeyModulus)) {
                 log.warn("Certificate file " + certFileName + " is a duplicate.");
                 continue;
             }
             publicKeys.add(currentKey);
             publicKeyModuli.add(currentKeyModulus);
-        }
 
-        Certificate cert = fetchServerCertificate();
-        log.debug("using certificate from server: " + cert);
-        if (cert != null) {
-            // keep a copy, so we can periodically check if it's been updated...
-            serverPublicKey = (RSAPublicKey) cert.getPublicKey();
-            // ...and add to list with local public keys
-            publicKeys.add(serverPublicKey);
-        } else {
-            log.warn("There was a problem retrieving the Certificate from the server.");
+            log.info("Successfully added cert: " + certFileName + ", with modulus beginning: "
+                         + currentKeyModulus.toString().substring(0, 10) + "...");
         }
     }
 
