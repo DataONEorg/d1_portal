@@ -34,13 +34,17 @@ public class PortalCertificateManager {
 
     private static int maxAttempts = 10;
 
-    private static PortalCertificateManager instance;
+    private static volatile PortalCertificateManager instance;
 
     public static Log log = LogFactory.getLog(PortalCertificateManager.class);
 
     public static PortalCertificateManager getInstance() {
         if (instance == null) {
-            instance = new PortalCertificateManager();
+            synchronized (PortalCertificateManager.class) {
+                if (instance == null) {
+                    instance = new PortalCertificateManager();
+                }
+            }
         }
         return instance;
     }

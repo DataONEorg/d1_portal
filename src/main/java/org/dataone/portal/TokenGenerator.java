@@ -53,7 +53,7 @@ public class TokenGenerator {
 
     public static Log log = LogFactory.getLog(TokenGenerator.class);
 
-    private static TokenGenerator instance = null;
+    private static volatile TokenGenerator instance = null;
 
     private String consumerKey = null;
     protected static List<RSAPublicKey> publicKeys = null;
@@ -66,7 +66,11 @@ public class TokenGenerator {
 
     public static TokenGenerator getInstance() throws IOException {
         if (instance == null) {
-            instance = new TokenGenerator();
+            synchronized (TokenGenerator.class) {
+                if (instance == null) {
+                    instance = new TokenGenerator();
+                }
+            }
         }
         return instance;
     }
