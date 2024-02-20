@@ -177,6 +177,18 @@ public class TokenGeneratorTest {
         String validLocalCert = "src/test/resources/org/dataone/portal/unitTestSelfSignedCert.pem";
         String bogusLocalCert = "/tmp/nonExistentCert.pem";
 
+        Settings.getConfiguration().clearProperty(pubCertKey);
+        TokenGenerator.getInstance().setPublicKeys();
+        // should be 1 public key total: none from disk & one from CN server
+        assertEquals(Arrays.toString(TokenGenerator.publicKeys.toArray()),
+                     1, TokenGenerator.publicKeys.size());
+
+        Settings.getConfiguration().addProperty(pubCertKey, null);
+        TokenGenerator.getInstance().setPublicKeys();
+        // should be 1 public key total: none from disk & one from CN server
+        assertEquals(Arrays.toString(TokenGenerator.publicKeys.toArray()),
+                     1, TokenGenerator.publicKeys.size());
+
         Settings.getConfiguration().setProperty(pubCertKey, validLocalCert);
         TokenGenerator.getInstance().setPublicKeys();
         // should be 2 public keys total: one from disk & one from CN server

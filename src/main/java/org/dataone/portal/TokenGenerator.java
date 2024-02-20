@@ -209,6 +209,10 @@ public class TokenGenerator {
         // use the configured certificate, if it exists, and also the one fetched from the CN
         String[] certificateFileNames =
             Settings.getConfiguration().getStringArray("cn.server.publiccert.filename");
+        if (certificateFileNames == null) {
+            log.info("No local certs defined in Settings");
+            certificateFileNames = new String[0];
+        }
         CertificateManager cmInst = CertificateManager.getInstance();
         log.debug("certificateFileNames: \n" + Arrays.toString(certificateFileNames));
         for (String certFileName : certificateFileNames) {
@@ -234,6 +238,8 @@ public class TokenGenerator {
             serverPublicKey = (RSAPublicKey) cert.getPublicKey();
             // ...and add to list with local public keys
             publicKeys.add(serverPublicKey);
+        } else {
+            log.warn("There was a problem retrieving the Certificate from the server.");
         }
     }
 
