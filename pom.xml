@@ -2,13 +2,13 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.dataone</groupId>
     <artifactId>d1_portal</artifactId>
-    <version>2.3.2</version>
+    <version>2.3.3</version>
     <name>d1_portal</name>
     <packaging>jar</packaging>
     <url>http://maven.apache.org</url>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <compiler.target.version>1.7</compiler.target.version>
+        <compiler.target.version>8</compiler.target.version>
         <d1_libclient_java.version>2.3.1</d1_libclient_java.version>
     </properties>
     <build>
@@ -16,14 +16,16 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.11.0</version>
                 <configuration>
-                    <source>1.7</source>
+                    <source>8</source>
                     <target>${compiler.target.version}</target>
                 </configuration>
             </plugin>
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>buildnumber-maven-plugin</artifactId>
+                <version>3.2.0</version>
                 <executions>
                     <execution>
                         <phase>validate</phase>
@@ -40,6 +42,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
+                <version>3.3.0</version>
                   <configuration>
                     <archive>
                         <manifestEntries>
@@ -129,13 +132,6 @@
                     <groupId>commons-codec</groupId>
                 </exclusion>
             </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>javax.servlet</groupId>
-            <artifactId>javax.servlet-api</artifactId>
-            <version>3.0.1</version>
-            <type>jar</type>
-            <scope>provided</scope>
         </dependency>
     </dependencies>
     <scm>
