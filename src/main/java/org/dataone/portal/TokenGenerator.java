@@ -1,14 +1,20 @@
 package org.dataone.portal;
 
 import java.io.IOException;
+import java.math.BigInteger;
 import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.security.cert.Certificate;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.text.ParseException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
+import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -50,11 +56,13 @@ public class TokenGenerator {
     private static TokenGenerator instance = null;
 
     private String consumerKey = null;
-    private RSAPublicKey publicKey = null;
+    protected static List<RSAPublicKey> publicKeys = null;
+    private RSAPublicKey serverPublicKey;
     private RSAPrivateKey privateKey = null;
 
     // 18 hour default, like certificates, in seconds
     private final int TTL_SECONDS = Settings.getConfiguration().getInt("token.ttl", 18 * 60 * 60);
+
 
     public static TokenGenerator getInstance() throws IOException {
         if (instance == null) {
@@ -68,9 +76,8 @@ public class TokenGenerator {
      * @throws IOException an I/O exception if the certificates cannot be read
      */
     private TokenGenerator() throws IOException {
-        setPrivateKey();
-        setConsumerKey();
-        setPublicKey();
+
+        setAllKeys();
 
         /* Create a timer to monitor the signing certificate every five minutes */
         Timer timer = new Timer("Signing Certificate Monitor");
@@ -84,21 +91,18 @@ public class TokenGenerator {
             @Override
             public void run() {
                 try {
-                    Certificate certificate = fetchServerCertificate();
-                    if (certificate != null) {
-                        RSAPublicKey currentKey = (RSAPublicKey) certificate.getPublicKey();
+                    Certificate NewServerCert = fetchServerCertificate();
+                    if (NewServerCert != null) {
+                        RSAPublicKey newPubKey = (RSAPublicKey) NewServerCert.getPublicKey();
                         // Replace the singleton in-memory key if it does not match the fetched key
-                        if (!currentKey.getModulus().equals(publicKey.getModulus())) {
-                            setPublicKey();
-                            setPrivateKey();
-                            setConsumerKey();
+                        if (!newPubKey.getModulus().equals(serverPublicKey.getModulus())) {
+                            setAllKeys();
                             log.info(
                                 "Portal reset the private key and public certificate after the "
                                 + "certificate was renewed. The new certificate has the "
-                                + "modulus " + publicKey.getModulus().toString(16));
+                                + "modulus " + serverPublicKey.getModulus().toString(16));
                         }
                     }
-
                 } catch (Exception e) {
                     log.warn("Couldn't fetch the server certificate for change comparison. "
                                  + e.getMessage());
@@ -120,6 +124,10 @@ public class TokenGenerator {
             URL url = new URL(baseUrl);
             HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
             conn.connect();
+            // it's safe to select the first array member, because `getServerCertificates()` returns
+            //   "...an ordered array of server certificates, with the peer's
+            //    own certificate first followed by any certificate authorities."
+            // @see https://docs.oracle.com/javase/8/docs/api/javax/net/ssl/HttpsURLConnection.html#getServerCertificates--
             return conn.getServerCertificates()[0];
         } catch (Exception e) {
             log.error(e.getMessage(), e);
@@ -189,21 +197,39 @@ public class TokenGenerator {
      * Set the public key
      * @throws IOException
      */
-    private void setPublicKey() throws IOException {
-        // use either the configured certificate, or fetch it from the CN
-        String certificateFileName =
-            Settings.getConfiguration().getString("cn.server.publiccert.filename");
+    protected void setPublicKeys() throws IOException {
+
+        publicKeys = new ArrayList<>();
+        List<BigInteger> publicKeyModuli = new ArrayList<>();
+
+        // use the configured certificate, if it exists, and also the one fetched from the CN
+        String[] certificateFileNames =
+            Settings.getConfiguration().getStringArray("cn.server.publiccert.filename");
         CertificateManager cmInst = CertificateManager.getInstance();
-        log.debug("certificateFileName=" + certificateFileName);
-        if (certificateFileName != null && !certificateFileName.isEmpty()) {
-            publicKey =
-                (RSAPublicKey) cmInst.loadCertificateFromFile(certificateFileName).getPublicKey();
-        } else {
-            Certificate cert = fetchServerCertificate();
-            log.debug("using certificate from server: " + cert);
-            if (cert != null) {
-                publicKey = (RSAPublicKey) cert.getPublicKey();
-            }  // what happens if publicKey is null?
+        log.debug("certificateFileNames: \n" + Arrays.toString(certificateFileNames));
+        for (String certFileName : certificateFileNames) {
+            if (!Files.isReadable(Paths.get(certFileName))) {
+                log.warn("Certificate file " + certFileName + " does not exist.");
+                continue;
+            }
+            RSAPublicKey currentKey =
+                (RSAPublicKey) cmInst.loadCertificateFromFile(certFileName).getPublicKey();
+            BigInteger currentKeyModulus = currentKey.getModulus();
+            if (publicKeyModuli.contains(currentKeyModulus)) {
+                log.warn("Certificate file " + certFileName + " is a duplicate.");
+                continue;
+            }
+            publicKeys.add(currentKey);
+            publicKeyModuli.add(currentKeyModulus);
+        }
+
+        Certificate cert = fetchServerCertificate();
+        log.debug("using certificate from server: " + cert);
+        if (cert != null) {
+            // keep a copy, so we can periodically check if it's been updated...
+            serverPublicKey = (RSAPublicKey) cert.getPublicKey();
+            // ...and add to list with local public keys
+            publicKeys.add(serverPublicKey);
         }
     }
 
@@ -215,33 +241,32 @@ public class TokenGenerator {
     }
 
     /**
-     * Extracts the subject from the token string, and attempts to get the SubjectInfo from the CN.
-     * If not able to, builds a SubjectInfo entry from the token subject.
+     * Uses configured public keys to verify provided token. Then extracts the subject from the
+     * token string, and attempts to get the SubjectInfo from the CN. If unsuccessful, builds a
+     * SubjectInfo entry from the token subject.
      *
      * @param token the given JWT token string
      * @return a Session or null if Exceptions raised (they are logged as Warnings)
      */
     public Session getSession(String token) {
-        AuthTokenSession session;
 
+        AuthTokenSession session;
         try {
             // parse the JWS and verify it
             SignedJWT signedJWT = SignedJWT.parse(token);
 
             // verify the signing
-            JWSVerifier verifier = new RSASSAVerifier(publicKey);
-            if (!signedJWT.verify(verifier)) {
-                log.info("public key: " + publicKey);
-                log.warn("Could not use public key to verify provided token: " + token);
+            if (!isKeyVerified(signedJWT)) {
+                log.warn("FAILED to verify token against (total " + publicKeys.size()
+                             + ") configured public key(s)");
 
                 // Reload the certificate keys in case they changed, and retry
-                setPrivateKey();
-                setPublicKey();
-                setConsumerKey();
-                verifier = new RSASSAVerifier(publicKey);
-                if (!signedJWT.verify(verifier)) {
-                    log.info("public key: " + publicKey);
-                    log.warn("Again, could not use public key to verify provided token: " + token);
+                setAllKeys();
+
+                if (!isKeyVerified(signedJWT)) {
+                    log.warn("FAILED a second time, to verify token against (total "
+                                 + publicKeys.size() + ") configured public key(s). "
+                                 + "Non-valid token follows:\n" + token);
                     return null;
                 }
             }
@@ -288,6 +313,23 @@ public class TokenGenerator {
             return null;
         }
         return session;
+    }
+
+    private boolean isKeyVerified(SignedJWT signedJWT) throws JOSEException {
+        JWSVerifier verifier;
+        for (RSAPublicKey publicKey : publicKeys) {
+            verifier = new RSASSAVerifier(publicKey);
+            if (signedJWT.verify(verifier)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private void setAllKeys() throws IOException {
+        setPublicKeys();
+        setPrivateKey();
+        setConsumerKey();
     }
 
     /**
