@@ -122,9 +122,9 @@ public class TokenGenerator {
      * @return either the Certificate or null (if problem)
      */
     public Certificate fetchServerCertificate() {
+        String baseUrl = "URL NOT FOUND!";
         try {
-            String baseUrl = D1Client.getCN().getNodeBaseServiceUrl();
-            log.debug("fetching cert from server: " + baseUrl);
+            baseUrl = D1Client.getCN().getNodeBaseServiceUrl();
             URL url = new URL(baseUrl);
             HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
             conn.connect();
@@ -134,7 +134,7 @@ public class TokenGenerator {
             // @see https://docs.oracle.com/javase/8/docs/api/javax/net/ssl/HttpsURLConnection.html#getServerCertificates--
             return conn.getServerCertificates()[0];
         } catch (Exception e) {
-            log.error(e.getMessage(), e);
+            log.error("Unable to fetch cert from server: " + baseUrl + "; error was: " + e.getMessage(), e);
         }
 
         return null;
@@ -232,7 +232,8 @@ public class TokenGenerator {
             log.info("No local certs defined in Settings");
             certificateFileNames = new String[0];
         }
-        log.debug("certificateFileNames: \n" + Arrays.toString(certificateFileNames));
+        log.debug("local certificate FileNames to be loaded: \n"
+                      + Arrays.toString(certificateFileNames));
         for (String certFileName : certificateFileNames) {
             if (!Files.isReadable(Paths.get(certFileName))) {
                 log.warn("Certificate file " + certFileName + " does not exist.");
