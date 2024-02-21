@@ -1,23 +1,3 @@
-/**
- * This work was created by participants in the DataONE project, and is jointly copyrighted by
- * participating institutions in DataONE. For more information on DataONE, see our web site at
- * http://dataone.org.
- *
- * Copyright ${year}
- *
- * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
- * in compliance with the License. You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software distributed under the License
- * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
- * or implied. See the License for the specific language governing permissions and limitations under
- * the License.
- *
- * $Id$
- */
-
 package org.dataone.portal;
 
 import java.io.File;
@@ -54,13 +34,17 @@ public class PortalCertificateManager {
 
     private static int maxAttempts = 10;
 
-    private static PortalCertificateManager instance;
+    private static volatile PortalCertificateManager instance;
 
     public static Log log = LogFactory.getLog(PortalCertificateManager.class);
 
     public static PortalCertificateManager getInstance() {
         if (instance == null) {
-            instance = new PortalCertificateManager();
+            synchronized (PortalCertificateManager.class) {
+                if (instance == null) {
+                    instance = new PortalCertificateManager();
+                }
+            }
         }
         return instance;
     }
@@ -110,22 +94,15 @@ public class PortalCertificateManager {
      * @param httpServletResponse
      */
     public void setCookie(String identifier, HttpServletResponse httpServletResponse) {
-        // put our d1 cookie back so we can look up the credential as needed.
-        //  Cookie cookie = new Cookie(ClientServlet.OA4MP_CLIENT_REQUEST_ID, identifier);
-        //cookie.setMaxAge(18 * 60 * 60); // 18 hours for certificate, so the
-        // cookie need not be longer
-        //cookie.setPath("/"); // need to cross contexts
-        //httpServletResponse.addCookie(cookie);
-
-        //SameSite=None: Allow third-parties to use this cookie (needed for authentication from
-        // other domains)
-        //Secure: Only send over HTTPS
-        //Path: need to cross contexts
-        // Max-Age: 18 hours for certificate, so the cookie need not be longer
+        // SameSite=None:   Allow third-parties to use this cookie (needed for authentication from
+        //                  other domains)
+        // Secure:          Only send over HTTPS
+        // Path:            Need to cross contexts
+        // Max-Age:         18 hours for certificate, so the cookie need not be longer
         httpServletResponse.setHeader("Set-Cookie",
                                       ClientServlet.OA4MP_CLIENT_REQUEST_ID + "=" + identifier
-                                          + "; SameSite=None; Secure; Path=/; Max-Age=" + (18 * 60
-                                          * 60));
+                                          + "; SameSite=None; Secure; Path=/; Max-Age="
+                                          + (18 * 60 * 60));
     }
 
     /**
@@ -240,7 +217,7 @@ public class PortalCertificateManager {
      */
     public Asset getCredentials(HttpServletRequest request) throws Exception {
         Cookie[] cookies = request.getCookies();
-        String identifier = null;
+        String identifier;
         if (cookies != null) {
             for (Cookie cookie : cookies) {
                 if (cookie.getName().equals(ClientServlet.OA4MP_CLIENT_REQUEST_ID)) {
@@ -275,7 +252,7 @@ public class PortalCertificateManager {
         if (certificate != null) {
             PrivateKey key = PortalCertificateManager.getInstance().getPrivateKey(request);
             String subjectName = CertificateManager.getInstance().getSubjectDN(certificate);
-            if (subjectName != null && key != null && certificate != null) {
+            if (subjectName != null && key != null) {
                 CertificateManager.getInstance().registerCertificate(subjectName, certificate, key);
             }
         }
