@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.net.URL;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.cert.Certificate;
 import java.security.interfaces.RSAPrivateKey;
@@ -235,8 +236,9 @@ public class TokenGenerator {
         log.debug("local certificate FileNames to be loaded: \n"
                       + Arrays.toString(certificateFileNames));
         for (String certFileName : certificateFileNames) {
-            if (!Files.isReadable(Paths.get(certFileName))) {
-                log.warn("Certificate file " + certFileName + " does not exist.");
+            Path certPath = Paths.get(certFileName);
+            if (Files.isDirectory(certPath) || !Files.isReadable(certPath)) {
+                log.warn("No readable Certificate file found at path: " + certFileName);
                 continue;
             }
             RSAPublicKey currentKey = (RSAPublicKey) CertificateManager.getInstance()
