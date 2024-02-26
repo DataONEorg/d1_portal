@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.net.URL;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.cert.Certificate;
 import java.security.interfaces.RSAPrivateKey;
@@ -228,15 +229,21 @@ public class TokenGenerator {
         // now add any local certificates, if configured
         String[] certificateFileNames =
             Settings.getConfiguration().getStringArray("cn.server.publiccert.filename");
-        if (certificateFileNames == null) {
+        if (certificateFileNames == null || certificateFileNames.length == 0) {
             log.info("No local certs defined in Settings");
-            certificateFileNames = new String[0];
+            return;
         }
         log.debug("local certificate FileNames to be loaded: \n"
                       + Arrays.toString(certificateFileNames));
         for (String certFileName : certificateFileNames) {
-            if (!Files.isReadable(Paths.get(certFileName))) {
-                log.warn("Certificate file " + certFileName + " does not exist.");
+            Path certPath = Paths.get(certFileName);
+            if (Files.isDirectory(certPath) || !Files.isReadable(certPath)) {
+                // Note: see https://docs.oracle.com/javase/8/docs/api/java/nio/file/Path.html -
+                // "Accessing a file using an empty path is equivalent to accessing the default
+                // directory of the file system".
+                // So if certFileName == "", Files.isReadable(certPath) will be true. However,
+                // the Files.isDirectory("") check will filter out this value
+                log.warn("No readable Certificate file found at path: " + certFileName);
                 continue;
             }
             RSAPublicKey currentKey = (RSAPublicKey) CertificateManager.getInstance()

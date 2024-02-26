@@ -166,10 +166,20 @@ public class TokenGeneratorTest {
     }
 
     @Test
-    public void testSetPublicKeys_multipleCerts() throws Exception {
+    public void testSetPublicKeys_singleCerts() throws Exception {
 
         String orig = Settings.getConfiguration().getString(PUB_CERT_KEY);
         String bogusLocalCert = "/tmp/nonExistentCert.pem";
+
+        ///////////////////////////////////////////
+        // Verify 1 local cert & 1 server cert case
+        // (i.e. backwards compatible)
+        ///////////////////////////////////////////
+        Settings.getConfiguration().setProperty(PUB_CERT_KEY, LOCAL_CERT_1);
+        TokenGenerator.getInstance().setPublicKeys();
+        // should be 2 public keys total: one from disk & one from CN server
+        assertEquals(Arrays.toString(TokenGenerator.publicKeys.toArray()), 2,
+                     TokenGenerator.publicKeys.size());
 
         ///////////////////////////////////////////
         // Verify code can handle missing config
@@ -187,15 +197,42 @@ public class TokenGeneratorTest {
         assertEquals(Arrays.toString(TokenGenerator.publicKeys.toArray()), 1,
                      TokenGenerator.publicKeys.size());
 
-        ///////////////////////////////////////////
-        // Verify 1 local cert & 1 server cert case
-        // (i.e. backwards compatible)
-        ///////////////////////////////////////////
-        Settings.getConfiguration().setProperty(PUB_CERT_KEY, LOCAL_CERT_1);
+        // Key present, but empty value
+        Settings.getConfiguration().addProperty(PUB_CERT_KEY, "");
         TokenGenerator.getInstance().setPublicKeys();
-        // should be 2 public keys total: one from disk & one from CN server
-        assertEquals(Arrays.toString(TokenGenerator.publicKeys.toArray()), 2,
+        // should be 1 public key total: none from disk & one from CN server
+        assertEquals(Arrays.toString(TokenGenerator.publicKeys.toArray()), 1,
                      TokenGenerator.publicKeys.size());
+
+        // Value set to paths that are invalid in this context (i.e. no filename)
+        Settings.getConfiguration().addProperty(PUB_CERT_KEY, ".");
+        TokenGenerator.getInstance().setPublicKeys();
+        // should be 1 public key total: none from disk & one from CN server
+        assertEquals(Arrays.toString(TokenGenerator.publicKeys.toArray()), 1,
+                     TokenGenerator.publicKeys.size());
+
+        Settings.getConfiguration().addProperty(PUB_CERT_KEY, "/");
+        TokenGenerator.getInstance().setPublicKeys();
+        // should be 1 public key total: none from disk & one from CN server
+        assertEquals(Arrays.toString(TokenGenerator.publicKeys.toArray()), 1,
+                     TokenGenerator.publicKeys.size());
+
+        // Value set to non-existent path
+        Settings.getConfiguration().addProperty(PUB_CERT_KEY, bogusLocalCert);
+        TokenGenerator.getInstance().setPublicKeys();
+        // should be 1 public key total: none from disk & one from CN server
+        assertEquals(Arrays.toString(TokenGenerator.publicKeys.toArray()), 1,
+                     TokenGenerator.publicKeys.size());
+
+        // clean up
+        Settings.getConfiguration().setProperty(PUB_CERT_KEY, orig);
+    }
+
+    @Test
+    public void testSetPublicKeys_multipleCerts() throws Exception {
+
+        String orig = Settings.getConfiguration().getString(PUB_CERT_KEY);
+        String bogusLocalCert = "/tmp/nonExistentCert.pem";
 
         ///////////////////////////////////////////
         // Verify 1 present & 1 missing local cert
@@ -220,6 +257,7 @@ public class TokenGeneratorTest {
         assertEquals(Arrays.toString(TokenGenerator.publicKeys.toArray()), 2,
                      TokenGenerator.publicKeys.size());
 
+        // clean up
         Settings.getConfiguration().setProperty(PUB_CERT_KEY, orig);
     }
 
