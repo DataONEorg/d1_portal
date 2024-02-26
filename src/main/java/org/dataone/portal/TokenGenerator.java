@@ -229,15 +229,20 @@ public class TokenGenerator {
         // now add any local certificates, if configured
         String[] certificateFileNames =
             Settings.getConfiguration().getStringArray("cn.server.publiccert.filename");
-        if (certificateFileNames == null) {
+        if (certificateFileNames == null || certificateFileNames.length == 0) {
             log.info("No local certs defined in Settings");
-            certificateFileNames = new String[0];
+            return;
         }
         log.debug("local certificate FileNames to be loaded: \n"
                       + Arrays.toString(certificateFileNames));
         for (String certFileName : certificateFileNames) {
             Path certPath = Paths.get(certFileName);
             if (Files.isDirectory(certPath) || !Files.isReadable(certPath)) {
+                // Note: see https://docs.oracle.com/javase/8/docs/api/java/nio/file/Path.html -
+                // "Accessing a file using an empty path is equivalent to accessing the default
+                // directory of the file system".
+                // So if certFileName == "", Files.isReadable(certPath) will be true. However,
+                // the Files.isDirectory("") check will filter out this value
                 log.warn("No readable Certificate file found at path: " + certFileName);
                 continue;
             }
