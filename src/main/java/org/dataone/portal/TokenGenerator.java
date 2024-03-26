@@ -127,6 +127,7 @@ public class TokenGenerator {
         try {
             baseUrl = D1Client.getCN().getNodeBaseServiceUrl();
             URL url = new URL(baseUrl);
+            log.debug("Fetching server certificate from CN URL: " + url);
             HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
             conn.connect();
             // it's safe to select the first array member, because `getServerCertificates()` returns
@@ -323,7 +324,7 @@ public class TokenGenerator {
             try {
                 subjectInfo = D1Client.getCN().getSubjectInfo(subject);
             } catch (Exception be) {
-                log.warn(be.getMessage(), be);
+                log.warn("No 'SubjectInfo' from CN; auto-populating. Error: " + be.getMessage());
             }
 
             // TODO: fill in more subject info if we didn't retrieve it
