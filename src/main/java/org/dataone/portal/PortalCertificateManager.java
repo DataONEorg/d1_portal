@@ -1,25 +1,3 @@
-/**
- * This work was created by participants in the DataONE project, and is
- * jointly copyrighted by participating institutions in DataONE. For
- * more information on DataONE, see our web site at http://dataone.org.
- *
- *   Copyright ${year}
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- *
- * $Id$
- */
-
 package org.dataone.portal;
 
 import java.io.File;
@@ -44,30 +22,38 @@ import edu.uiuc.ncsa.myproxy.oa4mp.client.loader.ClientEnvironmentUtil;
 import edu.uiuc.ncsa.myproxy.oa4mp.client.servlet.ClientServlet;
 
 public class PortalCertificateManager {
-    //this default value can be overwritten by a property named "oa4mp.client.config.file" in the portal.properties file.
-    private static final String DEFAULT_OA4MP_CONFIG_PATH = "/var/lib/tomcat7/webapps/portal/WEB-INF/client.xml";
+    //this default value can be overwritten by a property named "oa4mp.client.config.file" in the
+    // portal.properties file.
+    private static final String DEFAULT_OA4MP_CONFIG_PATH =
+        "/var/lib/tomcat7/webapps/portal/WEB-INF/client.xml";
 
-    private String configFile = Settings.getConfiguration().getString("oa4mp.client.config.file", DEFAULT_OA4MP_CONFIG_PATH);
+    private String configFile = Settings.getConfiguration()
+        .getString("oa4mp.client.config.file", DEFAULT_OA4MP_CONFIG_PATH);
 
     private String configName = null;
 
     private static int maxAttempts = 10;
 
-    private static PortalCertificateManager instance;
+    private static volatile PortalCertificateManager instance;
 
     public static Log log = LogFactory.getLog(PortalCertificateManager.class);
 
     public static PortalCertificateManager getInstance() {
         if (instance == null) {
-            instance = new PortalCertificateManager();
+            synchronized (PortalCertificateManager.class) {
+                if (instance == null) {
+                    instance = new PortalCertificateManager();
+                }
+            }
         }
         return instance;
     }
 
-    public PortalCertificateManager() {}
+    public PortalCertificateManager() {
+    }
 
     public PortalCertificateManager(String configFile) {
-    	this.configFile = configFile;
+        this.configFile = configFile;
     }
 
     /**
@@ -76,12 +62,12 @@ public class PortalCertificateManager {
      * @throws Exception
      */
     public void closeLoggers() throws Exception {
-    	ClientEnvironment ce = ClientEnvironmentUtil.load(new File(configFile), configName);
-    	Handler[] handlers = ce.getMyLogger().getLogger().getHandlers();
-		// close the log handlers for uiuc
-		for(Handler h: handlers) {
-		    h.close();   //must call h.close or a .LCK file will remain.
-		}
+        ClientEnvironment ce = ClientEnvironmentUtil.load(new File(configFile), configName);
+        Handler[] handlers = ce.getMyLogger().getLogger().getHandlers();
+        // close the log handlers for uiuc
+        for (Handler h : handlers) {
+            h.close();   //must call h.close or a .LCK file will remain.
+        }
     }
 
     /**
@@ -89,18 +75,18 @@ public class PortalCertificateManager {
      * @return
      */
     public String getConfigFile() {
-		return configFile;
-	}
+        return configFile;
+    }
 
     /**
      * Sets the client configuration file path
      * @param configFile
      */
-	public void setConfigFile(String configFile) {
-		this.configFile = configFile;
-	}
+    public void setConfigFile(String configFile) {
+        this.configFile = configFile;
+    }
 
-	/**
+    /**
      * Sets the certificate Cookie on the response. Future interactions with
      * this service will be tied to the certificate by this cookie
      *
@@ -108,18 +94,15 @@ public class PortalCertificateManager {
      * @param httpServletResponse
      */
     public void setCookie(String identifier, HttpServletResponse httpServletResponse) {
-      // put our d1 cookie back so we can look up the credential as needed.
-    //  Cookie cookie = new Cookie(ClientServlet.OA4MP_CLIENT_REQUEST_ID, identifier);
-      //cookie.setMaxAge(18 * 60 * 60); // 18 hours for certificate, so the
-                                      // cookie need not be longer
-      //cookie.setPath("/"); // need to cross contexts
-      //httpServletResponse.addCookie(cookie);
-
-      //SameSite=None: Allow third-parties to use this cookie (needed for authentication from other domains)
-      //Secure: Only send over HTTPS
-      //Path: need to cross contexts
-      // Max-Age: 18 hours for certificate, so the cookie need not be longer
-      httpServletResponse.setHeader("Set-Cookie", ClientServlet.OA4MP_CLIENT_REQUEST_ID + "=" + identifier + "; SameSite=None; Secure; Path=/; Max-Age=" + (18 * 60 * 60));
+        // SameSite=None:   Allow third-parties to use this cookie (needed for authentication from
+        //                  other domains)
+        // Secure:          Only send over HTTPS
+        // Path:            Need to cross contexts
+        // Max-Age:         18 hours for certificate, so the cookie need not be longer
+        httpServletResponse.setHeader("Set-Cookie",
+                                      ClientServlet.OA4MP_CLIENT_REQUEST_ID + "=" + identifier
+                                          + "; SameSite=None; Secure; Path=/; Max-Age="
+                                          + (18 * 60 * 60));
     }
 
     /**
@@ -160,8 +143,9 @@ public class PortalCertificateManager {
      * @throws IOException
      */
     public X509Certificate getCertificate(HttpServletRequest request) throws Exception {
-       Asset credential = getCredentials(request);
-        if (credential == null || credential.getCertificates() == null || credential.getCertificates().length < 1) {
+        Asset credential = getCredentials(request);
+        if (credential == null || credential.getCertificates() == null
+            || credential.getCertificates().length < 1) {
             return null;
         }
         return credential.getCertificates()[0];
@@ -193,17 +177,17 @@ public class PortalCertificateManager {
     public Asset getCredentials(String identifier) throws Exception {
 
         if (identifier != null) {
-        	ClientEnvironment ce = ClientEnvironmentUtil.load(new File(configFile), configName);
+            ClientEnvironment ce = ClientEnvironmentUtil.load(new File(configFile), configName);
 
-        	Asset asset = null;
+            Asset asset = null;
             int attempts = 0;
             while (asset == null) {
                 try {
-                	asset = ce.getAssetStore().get(identifier);
+                    asset = ce.getAssetStore().get(identifier);
                 } catch (Exception e) {
                     // sleep and try again, for a while until failing
-                    log.warn(attempts + " - Error getting transaction, trying again. "
-                            + e.getMessage());
+                    log.warn(
+                        attempts + " - Error getting transaction, trying again. " + e.getMessage());
                     try {
                         Thread.sleep(500);
                     } catch (InterruptedException ie) {
@@ -224,7 +208,7 @@ public class PortalCertificateManager {
         return null;
     }
 
-	/**
+    /**
      * Get the credentials from the store, based on the cookie (if present)
      *
      * @param request
@@ -233,7 +217,7 @@ public class PortalCertificateManager {
      */
     public Asset getCredentials(HttpServletRequest request) throws Exception {
         Cookie[] cookies = request.getCookies();
-        String identifier = null;
+        String identifier;
         if (cookies != null) {
             for (Cookie cookie : cookies) {
                 if (cookie.getName().equals(ClientServlet.OA4MP_CLIENT_REQUEST_ID)) {
@@ -248,10 +232,11 @@ public class PortalCertificateManager {
     public Session putPortalCertificateOnRequest(HttpServletRequest request) throws Exception {
         Session session = CertificateManager.getInstance().getSession(request);
         if (session == null) {
-            X509Certificate certificate = PortalCertificateManager.getInstance().getCertificate(request);
+            X509Certificate certificate =
+                PortalCertificateManager.getInstance().getCertificate(request);
             log.debug("Proxy certificate for the request = " + certificate);
             if (certificate != null) {
-                X509Certificate[] x509Certificates = new X509Certificate[] { certificate };
+                X509Certificate[] x509Certificates = new X509Certificate[]{certificate};
                 request.setAttribute("javax.servlet.request.X509Certificate", x509Certificates);
                 log.debug("Added proxy certificate to the request");
             }
@@ -261,23 +246,25 @@ public class PortalCertificateManager {
     }
 
     public void registerPortalCertificateWithCertificateManger(HttpServletRequest request)
-            throws Exception {
-        X509Certificate certificate = PortalCertificateManager.getInstance().getCertificate(request);
+        throws Exception {
+        X509Certificate certificate =
+            PortalCertificateManager.getInstance().getCertificate(request);
         if (certificate != null) {
             PrivateKey key = PortalCertificateManager.getInstance().getPrivateKey(request);
             String subjectName = CertificateManager.getInstance().getSubjectDN(certificate);
-            if (subjectName != null && key != null && certificate != null) {
+            if (subjectName != null && key != null) {
                 CertificateManager.getInstance().registerCertificate(subjectName, certificate, key);
             }
         }
     }
 
     public Session registerPortalCertificateAndPlaceOnRequest(HttpServletRequest request)
-            throws Exception {
+        throws Exception {
         Session session = CertificateManager.getInstance().getSession(request);
         if (session == null) {
             PortalCertificateManager.getInstance().putPortalCertificateOnRequest(request);
-            PortalCertificateManager.getInstance().registerPortalCertificateWithCertificateManger(request);
+            PortalCertificateManager.getInstance()
+                .registerPortalCertificateWithCertificateManger(request);
             session = CertificateManager.getInstance().getSession(request);
         }
         return session;
@@ -291,41 +278,43 @@ public class PortalCertificateManager {
      * @return
      */
     public Session getSession(HttpServletRequest request) {
-    	// initialize the session - three options
-    	Session session = null;
+        // initialize the session - three options
+        Session session = null;
 
-    	// #1
-    	// load session from certificate in request
-    	try {
-    		session = CertificateManager.getInstance().getSession(request);
-    	} catch (Exception e) {
-    		log.warn("For request " + request + ":"  + e.getMessage(), e);
-    	}
+        // #1
+        // load session from certificate in request
+        try {
+            session = CertificateManager.getInstance().getSession(request);
+        } catch (Exception e) {
+            log.warn("For request " + request + ":" + e.getMessage(), e);
+        }
 
         // #2
         // check for token
         if (session == null) {
-        	String token = request.getHeader("Authorization");
-        	if (token != null) {
-        		try {
-            		token = token.split(" ")[1];
-        			session = TokenGenerator.getInstance().getSession(token);
-        		} catch (IndexOutOfBoundsException e) {
-        		    log.warn("For request " + request + ": Could not extract a valid token from the request's Authorization header ('"
-        		            + token + "') in order to set the Session. Continuing...");
-        		} catch (Exception e) {
-            		log.warn("For request " + request + ":"  + e.getMessage(), e);
-            	}
-        	}
+            String token = request.getHeader("Authorization");
+            if (token != null) {
+                try {
+                    token = token.split(" ")[1];
+                    session = TokenGenerator.getInstance().getSession(token);
+                } catch (IndexOutOfBoundsException e) {
+                    log.warn("For request " + request
+                            + ": Could not extract a valid token from the request's "
+                                 + "Authorization header ('" + token
+                                 + "') in order to set the Session. Continuing...");
+                } catch (Exception e) {
+                    log.warn("For request " + request + ":" + e.getMessage(), e);
+                }
+            }
         }
 
         // #3 check for portal certificate
         if (session == null) {
-        	try {
-            	session = this.registerPortalCertificateAndPlaceOnRequest(request);
-        	} catch (Exception e) {
-        		log.warn("For request " + request + ":"  + e.getMessage(), e);
-        	}
+            try {
+                session = this.registerPortalCertificateAndPlaceOnRequest(request);
+            } catch (Exception e) {
+                log.warn("For request " + request + ":" + e.getMessage(), e);
+            }
         }
 
         return session;
