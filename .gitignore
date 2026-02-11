@@ -44,3 +44,6 @@ buildNumber.properties
 # Intellij
 .idea
 *.iml
+
+# VSCode
+.vscode

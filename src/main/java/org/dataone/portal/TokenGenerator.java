@@ -2,7 +2,12 @@ package org.dataone.portal;
 
 import java.io.IOException;
 import java.math.BigInteger;
+import java.net.URI;
 import java.net.URL;
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -126,7 +131,7 @@ public class TokenGenerator {
         String baseUrl = "URL NOT FOUND!";
         try {
             baseUrl = D1Client.getCN().getNodeBaseServiceUrl();
-            URL url = new URL(baseUrl);
+            URL url = new URI(baseUrl).toURL();
             log.debug("Fetching server certificate from CN URL: " + url);
             HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
             conn.connect();
@@ -156,20 +161,17 @@ public class TokenGenerator {
         expires.add(Calendar.SECOND, TTL_SECONDS);
 
         // Prepare JWT with claims set
-        JWTClaimsSet claimsSet = new JWTClaimsSet();
-        // claims for annotator: http://docs.annotatorjs.org/en/v1.2.x/authentication.html
-        claimsSet.setClaim("consumerKey", consumerKey);
-        claimsSet.setClaim("userId", userId);
-        claimsSet.setClaim("issuedAt", DateTimeMarshaller.serializeDateToUTC(now.getTime()));
-        claimsSet.setClaim("ttl", TTL_SECONDS);
-
-        claimsSet.setClaim("fullName", fullName);
-
         // standard JWT fields: https://tools.ietf.org/html/rfc7519#section-4.1.4
-        claimsSet.setSubject(userId);
-        claimsSet.setIssueTime(now.getTime());
-        claimsSet.setExpirationTime(expires.getTime());
-
+        JWTClaimsSet claimsSet = new JWTClaimsSet.Builder()
+            .claim("consumerKey", consumerKey)
+            .claim("userId", userId)
+            .claim("issuedAt", DateTimeMarshaller.serializeDateToUTC(now.getTime()))
+            .claim("ttl", TTL_SECONDS)
+            .claim("fullName", fullName)
+            .subject(userId)
+            .issueTime(now.getTime())
+            .expirationTime(expires.getTime())
+            .build();
         // purposefully skipping setting the claimsSet.setNotBeforeTime(nbf) to
         // avoid fussiness related to clock skew.
 
