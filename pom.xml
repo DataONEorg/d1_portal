@@ -11,15 +11,6 @@
         <compiler.target.version>25</compiler.target.version>
         <d1_libclient_java.version>2.3.1</d1_libclient_java.version>
     </properties>
-    <dependencyManagement>
-        <dependencies>
-            <dependency>
-                <groupId>net.oauth.core</groupId>
-                <artifactId>oauth-httpclient4</artifactId>
-                <version>20090913</version>
-            </dependency>
-        </dependencies>
-    </dependencyManagement>
     <build>
         <plugins>
             <plugin>
@@ -96,12 +87,29 @@
             <groupId>edu.uiuc.ncsa.myproxy</groupId>
             <artifactId>oa4mp-client-api</artifactId>
             <version>3.3</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>net.oauth.core</groupId>
+                    <artifactId>oauth-httpclient4</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
          <!--  new dependency with refactor from v1.0.7 to v3.3 -->
         <dependency>
             <groupId>edu.uiuc.ncsa.myproxy</groupId>
             <artifactId>oa4mp-client-loader-oauth1</artifactId>
             <version>3.3</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>net.oauth.core</groupId>
+                    <artifactId>oauth-httpclient4</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>net.oauth.core</groupId>
+            <artifactId>oauth-httpclient4</artifactId>
+            <version>20090913</version>
         </dependency>
         <dependency>
             <groupId>javax.servlet</groupId>
