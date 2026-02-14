@@ -81,11 +81,6 @@
                 </exclusion>
             </exclusions>
         </dependency>
-        <dependency>
-            <groupId>net.oauth.core</groupId>
-            <artifactId>oauth-httpclient4</artifactId>
-            <version>20090913</version>
-        </dependency>
         <!-- Force Apache HttpClient/httpcore versions to match d1_libclient_java transitive deps -->
         <dependency>
             <groupId>org.apache.httpcomponents</groupId>
@@ -102,12 +97,6 @@
             <artifactId>oa4mp-client-api</artifactId>
             <version>3.3</version>
         </dependency>
-        <dependency>
-            <groupId>edu.uiuc.ncsa.myproxy</groupId>
-            <artifactId>oa4mp-client-oauth1</artifactId>
-            <version>3.3</version>
-              <type>war</type>
-        </dependency>
          <!--  new dependency with refactor from v1.0.7 to v3.3 -->
         <dependency>
             <groupId>edu.uiuc.ncsa.myproxy</groupId>
@@ -119,16 +108,6 @@
             <artifactId>javax.servlet-api</artifactId>
             <version>3.0.1</version>
             <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>postgresql</groupId>
-              <artifactId>postgresql</artifactId>
-              <version>8.4-702.jdbc3</version>
-        </dependency>
-        <dependency>
-            <groupId>commons-codec</groupId>
-            <artifactId>commons-codec</artifactId>
-            <version>1.4</version>
         </dependency>
         <dependency>
             <groupId>org.dataone</groupId>
@@ -144,9 +123,9 @@
         </dependency>
     </dependencies>
     <scm>
-      <url>https://repository.dataone.org/software/cicore</url>
-      <connection>scm:svn:https://repository.dataone.org/software/cicore</connection>
-      <developerConnection>scm:svn:https://repository.dataone.org/software/cicore</developerConnection>
+      <url>https://github.com/DataONEorg/d1_portal</url>
+      <connection>scm:git:https://github.com/DataONEorg/d1_portal.git</connection>
+      <developerConnection>scm:git:ssh://git@github.com/DataONEorg/d1_portal.git</developerConnection>
       <tag>HEAD</tag>
     </scm>
 </project>
