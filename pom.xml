@@ -117,49 +117,13 @@
                 </exclusion>
             </exclusions>
         </dependency>
+        <!-- d1_libclient_java uses the log4j 1.x API without declaring it; it used to arrive
+             through oa4mp. TODO: move to the log4j 2 bridge (log4j-1.2-api) with the webapps'
+             logging configuration. -->
         <dependency>
-            <groupId>edu.uiuc.ncsa.myproxy</groupId>
-            <artifactId>oa4mp-client-api</artifactId>
-            <version>3.3</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>net.oauth.core</groupId>
-                    <artifactId>oauth-httpclient4</artifactId>
-                </exclusion>
-                <!-- oa4mp leaks junit at compile scope -->
-                <exclusion>
-                    <groupId>junit</groupId>
-                    <artifactId>junit</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-         <!--  new dependency with refactor from v1.0.7 to v3.3 -->
-        <dependency>
-            <groupId>edu.uiuc.ncsa.myproxy</groupId>
-            <artifactId>oa4mp-client-loader-oauth1</artifactId>
-            <version>3.3</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>net.oauth.core</groupId>
-                    <artifactId>oauth-httpclient4</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>net.oauth.core</groupId>
-            <artifactId>oauth-httpclient4</artifactId>
-            <version>20090913</version>
-            <!-- Use the httpclient/httpcore versions from d1_libclient_java instead of 4.0 -->
-            <exclusions>
-                <exclusion>
-                    <groupId>org.apache.httpcomponents</groupId>
-                    <artifactId>httpclient</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.apache.httpcomponents</groupId>
-                    <artifactId>httpcore</artifactId>
-                </exclusion>
-            </exclusions>
+            <groupId>log4j</groupId>
+            <artifactId>log4j</artifactId>
+            <version>1.2.17</version>
         </dependency>
         <dependency>
             <groupId>javax.servlet</groupId>
