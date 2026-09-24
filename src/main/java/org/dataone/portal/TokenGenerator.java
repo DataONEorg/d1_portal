@@ -4,10 +4,6 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.net.URI;
 import java.net.URL;
-import java.io.BufferedReader;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -49,11 +45,7 @@ import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 
 /**
- * Class for generating JSON web tokens for authenticated users. Targeting this for use with
- * AnnotateIt.org.
- *
- * @author leinfelder
- * @see "http://docs.annotatorjs.org"
+ * Class for generating JSON web tokens for authenticated users. 
  */
 public class TokenGenerator {
 
