@@ -9,7 +9,7 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <compiler.target.version>25</compiler.target.version>
-        <d1_libclient_java.version>2.3.1</d1_libclient_java.version>
+        <d1_libclient_java.version>2.4.1</d1_libclient_java.version>
     </properties>
     <build>
         <plugins>
@@ -49,6 +49,13 @@
         </repository>
     </repositories>
     <dependencies>
+        <!-- Declared first so its transitive dependency versions win Maven's conflict resolution -->
+        <dependency>
+            <groupId>org.dataone</groupId>
+            <artifactId>d1_libclient_java</artifactId>
+            <version>${d1_libclient_java.version}</version>
+            <type>jar</type>
+        </dependency>
 <!-- API, java.xml.bind module -->
         <dependency>
             <groupId>jakarta.xml.bind</groupId>
@@ -71,17 +78,6 @@
                     <artifactId>bcprov-jdk15on</artifactId>
                 </exclusion>
             </exclusions>
-        </dependency>
-        <!-- Force Apache HttpClient/httpcore versions to match d1_libclient_java transitive deps -->
-        <dependency>
-            <groupId>org.apache.httpcomponents</groupId>
-            <artifactId>httpclient</artifactId>
-            <version>4.3.6</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.httpcomponents</groupId>
-            <artifactId>httpcore</artifactId>
-            <version>4.3.2</version>
         </dependency>
         <dependency>
             <groupId>edu.uiuc.ncsa.myproxy</groupId>
@@ -110,24 +106,23 @@
             <groupId>net.oauth.core</groupId>
             <artifactId>oauth-httpclient4</artifactId>
             <version>20090913</version>
+            <!-- Use the httpclient/httpcore versions from d1_libclient_java instead of 4.0 -->
+            <exclusions>
+                <exclusion>
+                    <groupId>org.apache.httpcomponents</groupId>
+                    <artifactId>httpclient</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.httpcomponents</groupId>
+                    <artifactId>httpcore</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>javax.servlet</groupId>
             <artifactId>javax.servlet-api</artifactId>
             <version>3.0.1</version>
             <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.dataone</groupId>
-            <artifactId>d1_libclient_java</artifactId>
-            <version>${d1_libclient_java.version}</version>
-            <type>jar</type>
-            <exclusions>
-                <exclusion>
-                    <artifactId>commons-codec</artifactId>
-                    <groupId>commons-codec</groupId>
-                </exclusion>
-            </exclusions>
         </dependency>
     </dependencies>
     <scm>
