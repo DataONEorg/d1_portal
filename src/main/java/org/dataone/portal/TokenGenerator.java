@@ -30,7 +30,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.dataone.client.auth.AuthTokenSession;
 import org.dataone.client.auth.CertificateManager;
-import org.dataone.client.v1.itk.D1Client;
+import org.dataone.client.v2.itk.D1Client;
 import org.dataone.configuration.Settings;
 import org.dataone.service.types.v1.Person;
 import org.dataone.service.types.v1.Session;
@@ -324,7 +324,7 @@ public class TokenGenerator {
 
             SubjectInfo subjectInfo = null;
             try {
-                subjectInfo = D1Client.getCN().getSubjectInfo(subject);
+                subjectInfo = D1Client.getCN().getSubjectInfo(null, subject);
             } catch (Exception be) {
                 log.warn("No 'SubjectInfo' from CN; auto-populating. Error: " + be.getMessage());
             }
