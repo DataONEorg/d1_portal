@@ -45,7 +45,8 @@ import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 
 /**
- * Class for generating JSON web tokens for authenticated users. 
+ * Class for generating JSON web tokens for authenticated users. Call `getJWT()` to generate a token for a user.
+ * Call `getSession(String token)` to get a Session object from a token string.
  */
 public class TokenGenerator {
 
@@ -62,6 +63,13 @@ public class TokenGenerator {
     private final int TTL_SECONDS = Settings.getConfiguration().getInt("token.ttl", 18 * 60 * 60);
 
 
+    /**
+     * Get the singleton instance of the TokenGenerator. If it has not been created yet, it will be
+     * created and initialized. If it has already been created, the existing instance will be returned.
+     * Use `TokenGenerator.getInstance().getJWT(userId, fullName);` to generate a token for a user.
+     * @return the singleton instance of the TokenGenerator
+     * @throws IOException if an I/O error occurs if the certificates cannot be read
+     */
     public static TokenGenerator getInstance() throws IOException {
         if (instance == null) {
             synchronized (TokenGenerator.class) {
@@ -139,6 +147,15 @@ public class TokenGenerator {
         return null;
     }
 
+    /**
+     * Generates a JSON Web Token (JWT) for the given userId and fullName. The token is signed with the private key and includes claims such as consumerKey, userId, issuedAt, ttl, fullName, subject, issueTime, and expirationTime.
+     * @param userId the subject identifier for the user identified in the token
+     * @param fullName the full name of the user identified in the token
+     * @return a signed JWT string
+     * @throws JOSEException if there is an error during the signing process
+     * @throws ParseException if there is an error parsing the JWT claims
+     * @throws IOException 
+     */
     public String getJWT(String userId, String fullName)
         throws JOSEException, ParseException, IOException {
 
@@ -266,6 +283,10 @@ public class TokenGenerator {
     }
 
     /**
+     * Get a Session object from the provided JWT token string. The Session object contains the subject
+     * extracted from the token, and subject info retrieved from the CN. If the CN does not return subject info, 
+     * a default subject info is created.
+     * 
      * Uses configured public keys to verify provided token. Then extracts the subject from the
      * token string, and attempts to get the SubjectInfo from the CN. If unsuccessful, builds a
      * SubjectInfo entry from the token subject.
