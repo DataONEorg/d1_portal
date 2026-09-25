@@ -35,6 +35,28 @@ DataONE Portal is a Java package, and built using the [Maven](https://maven.apac
 To install `d1_portal` locally, install Java and Maven on your local machine,
 and then install or build the package with `mvn install` or `mvn package`, respectively.
 
+## Publishing to maven.dataone.org
+
+Releases and SNAPSHOTs are published to `maven.dataone.org` with `mvn deploy`, the same way as
+`d1_libclient_java` and `d1_common_java`. The `maven.dataone.org` repository in `distributionManagement` uses an
+`scpexe://` URL, so the `wagon-ssh-external` extension copies the artifacts with your local `ssh`
+and `scp`. You need an ssh login on `maven.dataone.org` with write access to `/var/www/maven`. If
+your username there differs from your local one, add it to `~/.m2/settings.xml`:
+
+```xml
+<settings>
+  <servers>
+    <server>
+      <id>maven.dataone.org</id>
+      <username>your-username</username>
+    </server>
+  </servers>
+</settings>
+```
+
+Then run `mvn clean deploy`. A version ending in `-SNAPSHOT` publishes a SNAPSHOT; for a release, set the
+release version in `pom.xml` and tag the commit first.
+
 ## License
 
 ```txt
